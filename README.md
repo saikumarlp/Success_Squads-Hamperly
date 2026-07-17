@@ -101,7 +101,7 @@ cd Luxury_Gift_Hampers
 Create a database manually in MySQL.
 
 ```sql
-CREATE DATABASE your_database_name;
+CREATE DATABASE luxury_gift_hampers;
 CREATE TABLE users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
 
