@@ -92,21 +92,36 @@ Luxury_Gift_Hampers/
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/<your-username>/<repository-name>.git
-cd <repository-name>
+git clone https://github.com/saikumarlp/Success_Squads-Hamperly.git
+cd Luxury_Gift_Hampers
 ```
 
 ## 2. Create the MySQL Database
 
 Create a database manually in MySQL.
 
-Example:
-
 ```sql
 CREATE DATABASE your_database_name;
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    full_name VARCHAR(100) NOT NULL,
+
+    email VARCHAR(255) NOT NULL UNIQUE,
+
+    mobile_number VARCHAR(10) NOT NULL UNIQUE,
+
+    password VARCHAR(255) NOT NULL,
+
+    role VARCHAR(50) DEFAULT 'user',
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP
+);
 ```
 
-Import or create the required tables as provided in the project.
 
 > **Note:** The project does not automatically create the database.
 
@@ -207,8 +222,6 @@ Authorization: Bearer <JWT_TOKEN>
 * OTP Authentication
 * Google Login
 * GitHub Login
-* Docker Support
-* CI/CD Pipeline
 
 ---
 
