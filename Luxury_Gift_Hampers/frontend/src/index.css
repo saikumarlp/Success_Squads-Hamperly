@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+:root {
+  --gold: #D4AF37;
+  --dark-gold: #AA820A;
+  --light-bg: #FAF9F6; /* Premium Alabaster/Off-white background */
+  --body-font: 'Montserrat', sans-serif;
+  --title-font: 'Playfair Display', serif;
+}
+
+body {
+  font-family: var(--body-font);
+  background-color: var(--light-bg) !important;
+  color: #333333;
+}
+
+/* Gold Button Custom Styling */
+.btn-gold {
+  background-color: var(--gold) !important;
+  border-color: var(--gold) !important;
+  color: #ffffff !important;
+  border-radius: 0 !important;
+  letter-spacing: 1.5px;
+  font-weight: 500;
+  transition: all 0.3s ease !important;
+}
+
+.btn-gold:hover, .btn-gold:focus {
+  background-color: var(--dark-gold) !important;
+  border-color: var(--dark-gold) !important;
+  box-shadow: 0 4px 10px rgba(212, 175, 55, 0.2) !important;
+}
+
+.btn-outline-gold {
+  background-color: transparent !important;
+  border-color: var(--gold) !important;
+  color: var(--gold) !important;
+  border-radius: 0 !important;
+  letter-spacing: 1.5px;
+  font-weight: 500;
+  transition: all 0.3s ease !important;
+}
+
+.btn-outline-gold:hover, .btn-outline-gold:focus {
+  background-color: var(--gold) !important;
+  color: #ffffff !important;
+}
+
+/* Premium Card Design */
+.card {
+  border-radius: 0 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Form Control Custom Styling */
+.form-control {
+  border-radius: 0 !important;
+  border: 1px solid #e0e0e0 !important;
+  padding: 10px 15px !important;
+  font-size: 0.9rem !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.form-control:focus {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.15) !important;
+}
+
+.form-label {
+  font-family: var(--body-font);
+  font-weight: 600;
+  color: #555;
+}
+
+/* Text Accent */
+.text-gold {
+  color: var(--gold) !important;
+}
+
+/* Loader Styling */
+.spinner-border {
+  border-width: 0.2em !important;
+}
