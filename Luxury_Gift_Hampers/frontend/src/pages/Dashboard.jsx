@@ -2,13 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import FeaturedProducts from '../components/FeaturedProducts';
+import { ToastContainer } from '../components/Toast';
 
+/**
+ * Customer Dashboard Component
+ * Manages user session checks, toast alerts, and houses the featured luxury e-commerce catalog.
+ */
 const Dashboard = () => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const [profileDetails, setProfileDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Custom toast alerts state
+  const [toasts, setToasts] = useState([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -22,6 +31,7 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
+    
     fetchProfile();
   }, []);
 
@@ -30,109 +40,62 @@ const Dashboard = () => {
     navigate('/login');
   };
 
+  const addToast = (message) => {
+    const id = Date.now() + Math.random().toString(36).substr(2, 9);
+    setToasts((prevToasts) => [...prevToasts, { id, message }]);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
+  };
+
   return (
-    <div className="container py-5 flex-grow-1 d-flex flex-column justify-content-center">
-      <div className="row justify-content-center">
-        <div className="col-12 col-md-8 col-lg-6">
-          <div 
-            className="card border-0 shadow-sm p-4 p-md-5 bg-white text-center position-relative"
-            style={{ 
-              borderRadius: '0',
-              borderTop: '5px solid #D4AF37'
-            }}
-          >
-            <div className="mb-4">
-              <span 
-                className="d-block" 
-                style={{ 
-                  fontFamily: "'Playfair Display', serif", 
-                  fontSize: '1.25rem', 
-                  fontWeight: '700', 
-                  letterSpacing: '3px',
-                  color: '#D4AF37'
-                }}
-              >
-                LUXURY GIFT HAMPERS
-              </span>
-              <div className="mx-auto my-2" style={{ width: '40px', height: '1px', backgroundColor: '#e0e0e0' }}></div>
-            </div>
+    <div className="container py-5 flex-grow-1 d-flex flex-column">
+      {/* Toast Notification Container */}
+      <ToastContainer toasts={toasts} onCloseToast={removeToast} />
 
-            {loading ? (
-              <div className="py-5">
-                <div className="spinner-border text-gold" role="status" style={{ color: '#D4AF37' }}>
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-              </div>
-            ) : error ? (
-              <div className="py-4">
-                <div className="alert alert-danger border-0 small mb-4" style={{ borderRadius: '0', backgroundColor: '#ffebee', color: '#c62828' }}>
-                  {error}
-                </div>
-                <button 
-                  onClick={handleLogout} 
-                  className="btn btn-gold text-white text-uppercase"
-                  style={{ backgroundColor: '#D4AF37', borderColor: '#D4AF37', borderRadius: '0', letterSpacing: '1px' }}
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <>
-                <h3 className="mb-2" style={{ fontFamily: "'Playfair Display', serif", fontWeight: '700' }}>
-                  Welcome, {profileDetails?.fullName}!
-                </h3>
-                <p className="text-muted small mb-4">Your premium customer dashboard</p>
-
-                <div 
-                  className="text-start mx-auto p-4 mb-4 bg-light" 
-                  style={{ 
-                    maxWidth: '400px', 
-                    borderRadius: '0',
-                    borderLeft: '3px solid #D4AF37'
-                  }}
-                >
-                  <div className="mb-2.5">
-                    <span className="text-uppercase text-muted small d-block fw-semibold" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Email Address</span>
-                    <span className="text-dark fw-medium">{profileDetails?.email}</span>
-                  </div>
-                  <div className="mb-2.5 mt-3">
-                    <span className="text-uppercase text-muted small d-block fw-semibold" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Mobile Number</span>
-                    <span className="text-dark fw-medium">{profileDetails?.mobileNumber}</span>
-                  </div>
-                  <div className="mt-3">
-                    <span className="text-uppercase text-muted small d-block fw-semibold" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>Member ID</span>
-                    <span className="text-dark fw-medium">LGH-{String(profileDetails?.id).padStart(5, '0')}</span>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <button 
-                    onClick={handleLogout} 
-                    className="btn btn-outline-gold px-5 py-2.5 text-uppercase fw-semibold"
-                    style={{ 
-                      borderColor: '#D4AF37', 
-                      color: '#D4AF37', 
-                      borderRadius: '0',
-                      letterSpacing: '1px',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = '#D4AF37';
-                      e.target.style.color = '#fff';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                      e.target.style.color = '#D4AF37';
-                    }}
-                  >
-                    Logout
-                  </button>
-                </div>
-              </>
-            )}
+      {loading ? (
+        <div className="py-5 text-center my-auto">
+          <div className="spinner-border text-gold" role="status" style={{ color: '#D4AF37' }}>
+            <span className="visually-hidden">Loading profile...</span>
           </div>
         </div>
-      </div>
+      ) : error ? (
+        <div className="row justify-content-center my-auto">
+          <div className="col-12 col-md-6">
+            <div className="card border-0 shadow-sm p-4 p-md-5 bg-white text-center" style={{ borderTop: '5px solid #D4AF37', borderRadius: '12px' }}>
+              <div className="alert alert-danger border-0 small mb-4 text-center" style={{ backgroundColor: '#ffebee', color: '#c62828' }}>
+                {error}
+              </div>
+              <button 
+                onClick={handleLogout} 
+                className="btn btn-gold text-white text-uppercase"
+                style={{ backgroundColor: '#D4AF37', borderColor: '#D4AF37', letterSpacing: '1px' }}
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Compact welcome text section */}
+          <div className="mb-4 text-start">
+            <span className="text-muted text-uppercase fw-semibold d-block" style={{ fontSize: '0.72rem', letterSpacing: '2px', color: '#D4AF37' }}>
+              LUXURY GIFT SELECTIONS
+            </span>
+            <h3 className="mb-0 text-dark fw-bold" style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', marginTop: '4px' }}>
+              Welcome back, {profileDetails?.fullName}!
+            </h3>
+          </div>
+
+          {/* Spacer */}
+          <div className="mb-4" style={{ height: '1px', backgroundColor: 'rgba(0,0,0,0.06)' }}></div>
+
+          {/* Curated Featured E-Commerce Catalog Section */}
+          <FeaturedProducts onAction={addToast} />
+        </>
+      )}
     </div>
   );
 };

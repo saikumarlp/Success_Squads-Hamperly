@@ -61,8 +61,32 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const forgotPassword = async (email) => {
+    try {
+      const response = await api.post('/auth/forgot-password', { email });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        throw error.response.data;
+      }
+      throw { message: error.response?.data?.message || error.message || "Something went wrong" };
+    }
+  };
+
+  const resetPassword = async (resetData) => {
+    try {
+      const response = await api.post('/auth/reset-password', resetData);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        throw error.response.data;
+      }
+      throw { message: error.response?.data?.message || error.message || "Something went wrong" };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, setUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, forgotPassword, resetPassword, setUser }}>
       {children}
     </AuthContext.Provider>
   );

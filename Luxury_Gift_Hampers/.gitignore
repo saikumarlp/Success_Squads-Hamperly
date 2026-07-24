@@ -37,6 +37,11 @@ yarn-error.log*
 .env.production.local
 .env.test.local
 
+# Environment files
+.env
+.env.*
+!.env.example
+
 ############################
 # React
 ############################
