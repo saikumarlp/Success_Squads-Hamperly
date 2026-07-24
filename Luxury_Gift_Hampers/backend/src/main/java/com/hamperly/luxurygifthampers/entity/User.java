@@ -1,6 +1,7 @@
 package com.hamperly.luxurygifthampers.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,6 +27,18 @@ public class User {
     @Column(name = "role", length = 50)
     private String role;
 
+    @Column(name = "profile_picture_url", length = 500)
+    private String profilePictureUrl;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column(name = "gender", length = 20)
+    private String gender;
+
+    @Column(name = "bio", length = 500)
+    private String bio;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -35,15 +48,25 @@ public class User {
     public User() {
     }
 
-    public User(Long id, String fullName, String email, String mobileNumber, String password, String role, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public User(Long id, String fullName, String email, String mobileNumber, String password, String role,
+                String profilePictureUrl, LocalDate dateOfBirth, String gender, String bio,
+                LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
         this.mobileNumber = mobileNumber;
         this.password = password;
         this.role = role;
+        this.profilePictureUrl = profilePictureUrl;
+        this.dateOfBirth = dateOfBirth;
+        this.gender = gender;
+        this.bio = bio;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public User(Long id, String fullName, String email, String mobileNumber, String password, String role, LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this(id, fullName, email, mobileNumber, password, role, null, null, null, null, createdAt, updatedAt);
     }
 
     @PrePersist
@@ -72,6 +95,18 @@ public class User {
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
 
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
+
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
@@ -86,6 +121,10 @@ public class User {
         private String mobileNumber;
         private String password;
         private String role;
+        private String profilePictureUrl;
+        private LocalDate dateOfBirth;
+        private String gender;
+        private String bio;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
 
@@ -95,11 +134,15 @@ public class User {
         public UserBuilder mobileNumber(String mobileNumber) { this.mobileNumber = mobileNumber; return this; }
         public UserBuilder password(String password) { this.password = password; return this; }
         public UserBuilder role(String role) { this.role = role; return this; }
+        public UserBuilder profilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; return this; }
+        public UserBuilder dateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; return this; }
+        public UserBuilder gender(String gender) { this.gender = gender; return this; }
+        public UserBuilder bio(String bio) { this.bio = bio; return this; }
         public UserBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
         public UserBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
 
         public User build() {
-            return new User(id, fullName, email, mobileNumber, password, role, createdAt, updatedAt);
+            return new User(id, fullName, email, mobileNumber, password, role, profilePictureUrl, dateOfBirth, gender, bio, createdAt, updatedAt);
         }
     }
 

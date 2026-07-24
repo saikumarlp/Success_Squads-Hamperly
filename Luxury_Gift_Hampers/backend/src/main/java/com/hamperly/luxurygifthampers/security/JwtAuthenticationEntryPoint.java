@@ -15,6 +15,10 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized access: " + authException.getMessage());
+        response.setContentType("application/json;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        String jsonMessage = String.format("{\"message\": \"Unauthorized access: %s\"}", 
+            authException.getMessage() != null ? authException.getMessage().replace("\"", "\\\"") : "Authentication required");
+        response.getWriter().write(jsonMessage);
     }
 }
