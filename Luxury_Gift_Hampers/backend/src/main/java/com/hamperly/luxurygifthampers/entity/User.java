@@ -10,15 +10,16 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long id;
 
-    @Column(name = "full_name", nullable = false, length = 100)
+    @Transient
     private String fullName;
 
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(name = "mobile_number", nullable = false, unique = true, length = 10)
+    @Transient
     private String mobileNumber;
 
     @Column(name = "password", nullable = false, length = 255)
@@ -27,16 +28,16 @@ public class User {
     @Column(name = "role", length = 50)
     private String role;
 
-    @Column(name = "profile_picture_url", length = 500)
+    @Transient
     private String profilePictureUrl;
 
-    @Column(name = "date_of_birth")
+    @Transient
     private LocalDate dateOfBirth;
 
-    @Column(name = "gender", length = 20)
+    @Transient
     private String gender;
 
-    @Column(name = "bio", length = 500)
+    @Transient
     private String bio;
 
     @Column(name = "created_at", insertable = false, updatable = false)
@@ -72,7 +73,7 @@ public class User {
     @PrePersist
     protected void onCreate() {
         if (this.role == null) {
-            this.role = "user";
+            this.role = "CUSTOMER";
         }
     }
 

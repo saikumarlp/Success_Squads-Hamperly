@@ -1,0 +1,41 @@
+Give me the Complete workflow design first
+Design a production-ready Registration and Login module for my E-Commerce application.
+
+Tech Stack:
+- Frontend: React, React Router, Axios, Tailwind
+- Backend: Java 25, Spring Boot 3, Spring Security, Spring Data JPA, Hibernate, MySQL, JWT, BCrypt, Bean Validation, Lombok
+
+Requirements:
+- Do NOT generate code.
+- First, design the complete module.
+
+Registration Fields:
+- Full Name
+- Email Address
+- Mobile Number
+- Password
+- Confirm Password
+
+Login Fields:
+- Email Address
+- Password
+
+Provide:
+1. Complete authentication workflow (Registration → Login → JWT Authentication).
+2. System architecture.
+3. Frontend page design.
+4. Backend architecture and folder structure.
+5. REST API design (request and response).
+6. Validation rules for every field.
+7. Security design (BCrypt for password hashing, JWT for authentication).
+8. Error handling and API response format.
+9. SQL table design with all columns, data types, constraints, indexes, and explanation for each column.
+10. Future scalability for Wishlist, Cart, Orders, Profile, etc.
+
+Important:
+- I will create the MySQL database myself.
+- Do NOT generate `CREATE DATABASE`.
+- Do NOT assume the database name.
+- Ask me for my database name after the design is complete.
+- After I provide the database name, give me the instruction create table fields and proceed with that table.
+- Wait for my approval before generating any code.

@@ -4,20 +4,15 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-    name = "password_reset_tokens",
-    indexes = {
-        @Index(name = "idx_token_hash", columnList = "token_hash"),
-        @Index(name = "idx_user_id", columnList = "user_id")
-    }
-)
+@Table(name = "jwt_tokens")
 public class PasswordResetToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "token_id")
     private Long id;
 
-    @Column(name = "token_hash", nullable = false, unique = true, length = 255)
+    @Column(name = "token", nullable = false, length = 2555)
     private String tokenHash;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -27,7 +22,7 @@ public class PasswordResetToken {
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
-    @Column(name = "used", nullable = false)
+    @Transient
     private boolean used = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)
