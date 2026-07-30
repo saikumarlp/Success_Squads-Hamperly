@@ -6,6 +6,16 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [cartCount, setCartCount] = useState(0);
+
+  const fetchCartCount = async () => {
+    try {
+      const response = await api.get('/cart/count');
+      setCartCount(response.data.cartCount || 0);
+    } catch (error) {
+      console.error("Error fetching cart count:", error);
+    }
+  };
 
   // Check if token exists and fetch current user profile on init
   useEffect(() => {
@@ -20,6 +30,9 @@ export const AuthProvider = ({ children }) => {
           const response = await api.get('/users/me');
           setUser(response.data);
           localStorage.setItem('user', JSON.stringify(response.data));
+          // Fetch cart count
+          const countRes = await api.get('/cart/count');
+          setCartCount(countRes.data.cartCount || 0);
         } catch (error) {
           console.error("Token verification failed", error);
           logout();
@@ -40,6 +53,15 @@ export const AuthProvider = ({ children }) => {
       const userData = { fullName, email: userEmail };
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
+
+      // Fetch cart count on login
+      try {
+        const countRes = await api.get('/cart/count');
+        setCartCount(countRes.data.cartCount || 0);
+      } catch (e) {
+        console.error("Error fetching cart count on login", e);
+      }
+
       return userData;
     } catch (error) {
       throw error.response?.data || { message: "Something went wrong" };
@@ -59,6 +81,17 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    setCartCount(0);
+  };
+
+  const addToCart = async (productId, quantity = 1) => {
+    try {
+      const response = await api.post('/cart/add', { productId, quantity });
+      setCartCount(response.data.cartCount || 0);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Failed to add item to cart" };
+    }
   };
 
   const forgotPassword = async (email) => {
@@ -86,7 +119,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, forgotPassword, resetPassword, setUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, forgotPassword, resetPassword, setUser, cartCount, addToCart, fetchCartCount }}>
       {children}
     </AuthContext.Provider>
   );

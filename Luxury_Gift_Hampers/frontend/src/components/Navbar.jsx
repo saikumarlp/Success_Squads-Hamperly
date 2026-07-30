@@ -16,7 +16,7 @@ const getInitials = (fullName) => {
 };
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, cartCount } = useAuth();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -133,7 +133,7 @@ const Navbar = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
                 <span className="position-absolute translate-middle badge rounded-pill badge-gold" style={{ top: '6px', right: '-1px', fontSize: '0.58rem', padding: '3px 5px' }}>
-                  0
+                  {cartCount}
                 </span>
               </button>
             </>
