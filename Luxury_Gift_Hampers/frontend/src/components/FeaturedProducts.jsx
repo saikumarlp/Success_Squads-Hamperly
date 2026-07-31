@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getFeaturedProducts } from '../services/productService';
+import api from '../services/api';
 import ProductCard from './ProductCard';
 
 /**
@@ -42,26 +42,53 @@ const EmptyState = () => (
  * Reusable Featured Products Catalog Section
  */
 const FeaturedProducts = ({ onAction }) => {
+  const [categories, setCategories] = useState([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [productsLoading, setProductsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Load Categories on mount
   useEffect(() => {
-    const loadProducts = async () => {
+    const loadCategories = async () => {
       try {
         setLoading(true);
-        const data = await getFeaturedProducts();
-        setProducts(data);
+        const response = await api.get('/products/categories');
+        setCategories(response.data);
+        if (response.data && response.data.length > 0) {
+          setSelectedCategoryId(response.data[0].id);
+        }
       } catch (err) {
-        console.error("Error loading products:", err);
-        setError("Failed to fetch featured collection.");
+        console.error("Error loading categories:", err);
+        setError("Failed to fetch collection categories.");
       } finally {
         setLoading(false);
       }
     };
 
-    loadProducts();
+    loadCategories();
   }, []);
+
+  // Load Products when active tab changes
+  useEffect(() => {
+    if (selectedCategoryId === null) return;
+
+    const loadProducts = async () => {
+      try {
+        setProductsLoading(true);
+        const response = await api.get(`/products?categoryId=${selectedCategoryId}`);
+        setProducts(response.data);
+      } catch (err) {
+        console.error("Error loading products:", err);
+        onAction("Failed to load products for the selected category.");
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, [selectedCategoryId]);
 
   return (
     <div className="mb-5">
@@ -80,16 +107,51 @@ const FeaturedProducts = ({ onAction }) => {
             fontSize: '2.5rem'
           }}
         >
-          Featured Luxury Hampers
+          Curated Luxury Hampers
         </h2>
         <div className="mx-auto my-3" style={{ width: '60px', height: '2px', backgroundColor: '#D4AF37' }}></div>
         <p className="text-muted leading-relaxed" style={{ fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
-          Discover our premium handcrafted gift collections.
+          Discover our premium handcrafted gift collections by category.
         </p>
       </div>
 
+      {/* Category Selection Tabs */}
+      {!loading && categories.length > 0 && (
+        <div className="d-flex justify-content-center mb-5 overflow-auto pb-2 gap-2 gap-md-3">
+          {categories.map((category) => {
+            const isActive = selectedCategoryId === category.id;
+            const displayName = category.categoryName
+              .split('_')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+
+            return (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategoryId(category.id)}
+                className="btn px-4 py-2.5 text-uppercase fw-semibold"
+                style={{
+                  borderRadius: '0',
+                  fontSize: '0.82rem',
+                  letterSpacing: '1.5px',
+                  backgroundColor: isActive ? '#D4AF37' : 'transparent',
+                  color: isActive ? '#fff' : '#444',
+                  borderColor: '#D4AF37',
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  transition: 'all 0.3s ease',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {displayName}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Conditional Rendering State (Skeleton -> Empty/Error -> Grid) */}
-      {loading ? (
+      {loading || productsLoading ? (
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 justify-content-center">
           {Array.from({ length: 4 }).map((_, index) => (
             <div key={index} className="col d-flex">
@@ -113,20 +175,17 @@ const FeaturedProducts = ({ onAction }) => {
           <div className="text-center mt-5">
             <button 
               type="button"
-              className="btn btn-outline-gold px-5 py-3 text-uppercase fw-bold text-secondary"
-              disabled
+              className="btn btn-gold px-5 py-3 text-uppercase fw-bold text-white"
               style={{ 
+                backgroundColor: '#D4AF37',
                 borderColor: '#D4AF37', 
-                borderRadius: '8px',
+                borderRadius: '0',
                 letterSpacing: '2px',
-                fontSize: '0.85rem',
-                opacity: 0.55,
-                cursor: 'not-allowed',
-                backgroundColor: 'transparent'
+                fontSize: '0.85rem'
               }}
-              title="All products catalog coming soon"
+              onClick={() => onAction("All products catalog is now live in categories!")}
             >
-              View All Products
+              Browse Category Selections
             </button>
           </div>
         </>

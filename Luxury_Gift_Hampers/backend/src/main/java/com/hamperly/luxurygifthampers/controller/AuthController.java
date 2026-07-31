@@ -1,5 +1,4 @@
 package com.hamperly.luxurygifthampers.controller;
-
 import com.hamperly.luxurygifthampers.dto.AuthResponse;
 import com.hamperly.luxurygifthampers.dto.LoginRequest;
 import com.hamperly.luxurygifthampers.dto.RegisterRequest;
@@ -90,6 +89,7 @@ public class AuthController {
                     .email(user.getEmail())
                     .build());
         } catch (Exception ex) {
+            ex.printStackTrace();
             Map<String, String> errors = new HashMap<>();
             errors.put("message", "Invalid email or password");
             return new ResponseEntity<>(errors, HttpStatus.UNAUTHORIZED);

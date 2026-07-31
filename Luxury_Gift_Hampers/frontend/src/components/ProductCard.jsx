@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 // Reliable fallback luxury hamper image if Unsplash links ever fail
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&q=80&w=600";
@@ -66,30 +67,54 @@ const formatRupee = (value) => {
  */
 const ProductCard = ({ product, onAction }) => {
   const {
+    id,
     name,
-    category,
-    shortDescription,
-    currentPrice,
-    originalPrice,
-    discountPercentage,
-    rating,
-    reviewCount,
-    stockStatus,
-    badge,
-    image
+    description,
+    price,
+    stock,
+    categoryName,
+    imageUrl
   } = product;
 
-  // Local state to handle image fallback gracefully on errors
-  const [imgSrc, setImgSrc] = useState(image || DEFAULT_IMAGE);
+  const { addToCart } = useAuth();
+  const [adding, setAdding] = useState(false);
 
-  const isLowStock = 
-    stockStatus.toLowerCase().includes('limit') || 
-    stockStatus.toLowerCase().includes('left') || 
-    stockStatus.toLowerCase().includes('only');
+  // Local state to handle image fallback gracefully on errors
+  const [imgSrc, setImgSrc] = useState(imageUrl || DEFAULT_IMAGE);
+
+  // Set default values for visual presentation
+  const rating = 4.8;
+  const reviewCount = 35;
+  const currentPrice = price || 0;
+  const originalPrice = price ? price * 1.25 : 0;
+  const discountPercentage = 20;
+  
+  const isOutOfStock = stock <= 0;
+  const isLowStock = stock > 0 && stock < 15;
+  const stockStatusText = isOutOfStock ? "Out of Stock" : (isLowStock ? `Only ${stock} left!` : "In Stock");
+  const badge = isOutOfStock ? "Out of Stock" : (isLowStock ? "Limited" : null);
 
   const handleAction = (e, actionName) => {
     e.stopPropagation();
     onAction(`"${actionName}" for "${name}" will be available soon.`);
+  };
+
+  const handleAddToCart = async (e) => {
+    e.stopPropagation();
+    if (isOutOfStock) {
+      onAction(`"${name}" is currently out of stock.`);
+      return;
+    }
+    setAdding(true);
+    try {
+      await addToCart(id, 1);
+      onAction(`"${name}" has been added to your cart.`);
+    } catch (err) {
+      console.error(err);
+      onAction(err.message || "Failed to add item to cart.");
+    } finally {
+      setAdding(false);
+    }
   };
 
   const handleImageError = () => {
@@ -121,13 +146,13 @@ const ProductCard = ({ product, onAction }) => {
       {/* Product Details Body */}
       <div className="card-body p-4 d-flex flex-column flex-grow-1">
         {/* Category */}
-        <div className="luxury-category">{category}</div>
+        <div className="luxury-category">{categoryName}</div>
 
         {/* Product Title */}
         <h4 className="luxury-title" title={name}>{name}</h4>
 
         {/* Short Description */}
-        <p className="luxury-desc text-muted">{shortDescription}</p>
+        <p className="luxury-desc text-muted">{description}</p>
 
         {/* Price Tag Row with Indian Rupee (₹) Symbols */}
         <div className="price-container mt-auto">
@@ -152,7 +177,7 @@ const ProductCard = ({ product, onAction }) => {
 
         {/* Stock Alert State */}
         <div className={`stock-status ${isLowStock ? 'stock-low' : 'stock-in'}`}>
-          <span className="me-1">●</span> {stockStatus}
+          <span className="me-1">●</span> {stockStatusText}
         </div>
 
         {/* Interactive Buttons */}
@@ -183,13 +208,18 @@ const ProductCard = ({ product, onAction }) => {
           <button 
             type="button"
             className="btn btn-action-icon"
-            onClick={(e) => handleAction(e, 'Add to Cart')}
-            title="Add to Cart"
+            onClick={handleAddToCart}
+            disabled={adding || isOutOfStock}
+            title={isOutOfStock ? "Out of Stock" : "Add to Cart"}
             aria-label="Add to Cart"
           >
-            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
+            {adding ? (
+              <span className="spinner-border spinner-border-sm text-gold" role="status" style={{ width: '14px', height: '14px', borderColor: '#D4AF37', borderRightColor: 'transparent' }}></span>
+            ) : (
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+            )}
           </button>
         </div>
       </div>
