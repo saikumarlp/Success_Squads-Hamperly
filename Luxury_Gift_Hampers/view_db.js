@@ -5,10 +5,10 @@ async function checkDatabase() {
   try {
     connection = await mysql.createConnection({
       host: '127.0.0.1',
-      port: 3309,
+      port: 3306,
       user: 'root',
-      password: 'Anusha@1234',
-      database: 'luxury_gift_hampers'
+      password: 'sai1234',
+      database: 'e_commerce'
     });
 
     console.log('\n=========================================');
@@ -22,7 +22,7 @@ async function checkDatabase() {
 
     // 2. Show Users
     console.log('\n--- DATA IN "users" TABLE ---');
-    const [users] = await connection.query('SELECT id, full_name, email, role, created_at, updated_at FROM users;');
+    const [users] = await connection.query('SELECT user_id, full_name, email, role, created_at, updated_at FROM users;');
     console.table(users);
 
     // 3. Show JWT Tokens
@@ -62,7 +62,7 @@ async function checkDatabase() {
 
   } catch (error) {
     console.error('Error querying database:', error.message);
-    console.log('\nEnsure your MySQL server is running on port 3309.');
+    console.log('\nEnsure your MySQL server is running on port 3306.');
   } finally {
     if (connection) {
       await connection.end();

@@ -94,6 +94,26 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateCartQty = async (productId, quantity) => {
+    try {
+      const response = await api.put('/cart/update', { productId, quantity });
+      setCartCount(response.data.cartCount || 0);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Failed to update item quantity" };
+    }
+  };
+
+  const removeFromCart = async (productId) => {
+    try {
+      const response = await api.delete(`/cart/remove/${productId}`);
+      setCartCount(response.data.cartCount || 0);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Failed to remove item from cart" };
+    }
+  };
+
   const forgotPassword = async (email) => {
     try {
       const response = await api.post('/auth/forgot-password', { email });
@@ -119,7 +139,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, forgotPassword, resetPassword, setUser, cartCount, addToCart, fetchCartCount }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, forgotPassword, resetPassword, setUser, cartCount, addToCart, fetchCartCount, updateCartQty, removeFromCart }}>
       {children}
     </AuthContext.Provider>
   );

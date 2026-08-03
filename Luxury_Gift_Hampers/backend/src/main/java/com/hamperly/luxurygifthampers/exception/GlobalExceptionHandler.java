@@ -110,12 +110,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
         logger.error("Unhandled exception caught in GlobalExceptionHandler", ex);
 
-        String rawMessage = ex.getMessage();
         String userMessage = "An unexpected error occurred. Please try again later.";
-
-        if (rawMessage != null && !rawMessage.isBlank() && !rawMessage.contains("Conversion =") && !rawMessage.contains("UnknownFormat")) {
-            userMessage = rawMessage;
-        }
 
         Map<String, String> response = new HashMap<>();
         response.put("message", userMessage);

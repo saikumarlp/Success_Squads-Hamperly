@@ -41,13 +41,13 @@ async function resetDatabase() {
     // Connect to MySQL (without selecting a DB first, in case it does not exist)
     connection = await mysql.createConnection({
       host: '127.0.0.1',
-      port: 3309,
+      port: 3306,
       user: 'root',
-      password: 'Anusha@1234',
+      password: 'sai1234',
       multipleStatements: true
     });
 
-    console.log('Connected to MySQL server on port 3309.');
+    console.log('Connected to MySQL server on port 3306.');
 
     for (let i = 0; i < statements.length; i++) {
       const statement = statements[i];

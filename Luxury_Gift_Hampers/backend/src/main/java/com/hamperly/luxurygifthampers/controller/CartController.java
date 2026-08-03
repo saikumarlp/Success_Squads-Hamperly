@@ -62,4 +62,42 @@ public class CartController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping("/update")
+    public ResponseEntity<Map<String, Object>> updateCartQuantity(
+            @Valid @RequestBody AddToCartRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        cartService.updateCartItemQuantity(userDetails.getUsername(), request.getProductId(), request.getQuantity());
+
+        Integer count = cartService.getCartCount(userDetails.getUsername());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Cart updated successfully");
+        response.put("cartCount", count);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/remove/{productId}")
+    public ResponseEntity<Map<String, Object>> removeCartItem(
+            @PathVariable Long productId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        cartService.removeCartItem(userDetails.getUsername(), productId);
+
+        Integer count = cartService.getCartCount(userDetails.getUsername());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Item removed from cart successfully");
+        response.put("cartCount", count);
+
+        return ResponseEntity.ok(response);
+    }
 }

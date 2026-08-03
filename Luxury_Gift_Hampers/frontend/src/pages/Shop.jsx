@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
-import ProductCard from './ProductCard';
+import ProductCard from '../components/ProductCard';
 import { useAuth } from '../context/AuthContext';
+import { ToastContainer } from '../components/Toast';
 
-/**
- * Loading Skeleton Card component with pulsing animation
- */
 const ProductSkeleton = () => (
   <div className="card skeleton-card border-0 skeleton-pulse">
     <div className="skeleton-img"></div>
@@ -15,113 +14,131 @@ const ProductSkeleton = () => (
       <div className="skeleton-text skeleton-desc"></div>
       <div className="skeleton-text skeleton-price"></div>
       <div className="skeleton-text skeleton-rating"></div>
-      <div className="skeleton-text skeleton-badge-stock"></div>
       <div className="skeleton-btn-row">
         <div className="skeleton-text skeleton-btn-main"></div>
-        <div className="skeleton-text skeleton-btn-icon"></div>
-        <div className="skeleton-text skeleton-btn-icon"></div>
       </div>
     </div>
   </div>
 );
 
-/**
- * Premium Empty State component
- */
-const EmptyState = () => (
-  <div className="premium-empty-state">
-    <div className="premium-empty-state-icon" aria-hidden="true">✨</div>
-    <h3 className="premium-empty-state-title">No Collections Found</h3>
-    <p className="premium-empty-state-text">
-      Our handcrafted signature luxury gift hampers are currently being prepared. 
-      Please visit again soon to explore our exclusive new offerings.
-    </p>
-  </div>
-);
-
-/**
- * Reusable Featured Products Catalog Section
- */
-const FeaturedProducts = ({ onAction }) => {
+const Shop = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryParam = searchParams.get('categoryId');
   const [categories, setCategories] = useState([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(categoryParam || 'all');
   const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    if (selectedCategoryId === 'all') {
+      searchParams.delete('categoryId');
+    } else {
+      searchParams.set('categoryId', selectedCategoryId);
+    }
+    setSearchParams(searchParams);
+  }, [selectedCategoryId]);
+
+  useEffect(() => {
+    const currentParam = searchParams.get('categoryId') || 'all';
+    if (currentParam !== selectedCategoryId) {
+      setSelectedCategoryId(currentParam);
+    }
+  }, [searchParams]);
   const [loading, setLoading] = useState(true);
-  const [productsLoading, setProductsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('default');
+  const [toasts, setToasts] = useState([]);
 
   // Modal Details State
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalAdding, setModalAdding] = useState(false);
   const { addToCart } = useAuth();
 
+  const addToast = (message) => {
+    const id = Date.now() + Math.random().toString(36).substr(2, 9);
+    setToasts((prevToasts) => [...prevToasts, { id, message }]);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
+  };
+
   const handleModalAddToCart = async (product) => {
     if (product.stock <= 0) {
-      onAction(`"${product.name}" is currently out of stock.`);
+      addToast(`"${product.name}" is currently out of stock.`);
       return;
     }
     setModalAdding(true);
     try {
       await addToCart(product.id, 1);
-      onAction(`"${product.name}" has been added to your cart.`);
+      addToast(`"${product.name}" has been added to your cart.`);
     } catch (err) {
       console.error(err);
-      onAction(err.message || "Failed to add item to cart.");
+      addToast(err.message || "Failed to add item to cart.");
     } finally {
       setModalAdding(false);
     }
   };
 
-  // Load Categories on mount
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        setLoading(true);
         const response = await api.get('/products/categories');
-        setCategories(response.data);
-        if (response.data && response.data.length > 0) {
-          setSelectedCategoryId(response.data[0].id);
-        }
+        setCategories(response.data || []);
       } catch (err) {
         console.error("Error loading categories:", err);
-        setError("Failed to fetch collection categories.");
+      }
+    };
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        let url = '/products';
+        if (selectedCategoryId !== 'all') {
+          url += `?categoryId=${selectedCategoryId}`;
+        }
+        const response = await api.get(url);
+        setProducts(response.data || []);
+      } catch (err) {
+        console.error("Error loading products:", err);
+        addToast("Failed to retrieve products from database.");
       } finally {
         setLoading(false);
       }
     };
-
-    loadCategories();
-  }, []);
-
-  // Load Products when active tab changes
-  useEffect(() => {
-    if (selectedCategoryId === null) return;
-
-    const loadProducts = async () => {
-      try {
-        setProductsLoading(true);
-        const response = await api.get(`/products?categoryId=${selectedCategoryId}`);
-        setProducts(response.data);
-      } catch (err) {
-        console.error("Error loading products:", err);
-        onAction("Failed to load products for the selected category.");
-      } finally {
-        setProductsLoading(false);
-      }
-    };
-
     loadProducts();
   }, [selectedCategoryId]);
 
+  // Apply frontend search and sort
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          product.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortBy === 'lowToHigh') {
+      return a.price - b.price;
+    }
+    if (sortBy === 'highToLow') {
+      return b.price - a.price;
+    }
+    return 0; // default (database order)
+  });
+
   return (
-    <div className="mb-5">
-      {/* Section Header */}
+    <div className="container py-5 flex-grow-1">
+      <ToastContainer toasts={toasts} onCloseToast={removeToast} />
+
+      {/* Header */}
       <div className="text-center mb-5">
         <span 
           className="d-block text-uppercase mb-2 text-muted fw-bold"
           style={{ fontSize: '0.8rem', letterSpacing: '3px', color: '#D4AF37' }}
         >
-          Curated Collections
+          Exclusive Hampers
         </span>
         <h2 
           className="mb-3 text-dark fw-bold" 
@@ -130,51 +147,63 @@ const FeaturedProducts = ({ onAction }) => {
             fontSize: '2.5rem'
           }}
         >
-          Curated Luxury Hampers
+          Luxury Gift Catalog
         </h2>
         <div className="mx-auto my-3" style={{ width: '60px', height: '2px', backgroundColor: '#D4AF37' }}></div>
-        <p className="text-muted leading-relaxed" style={{ fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
-          Discover our premium handcrafted gift collections by category.
-        </p>
       </div>
 
-      {/* Category Selection Tabs */}
-      {!loading && categories.length > 0 && (
-        <div className="d-flex justify-content-center mb-5 overflow-auto pb-2 gap-2 gap-md-3">
-          {categories.map((category) => {
-            const isActive = selectedCategoryId === category.id;
-            const displayName = category.categoryName
-              .split('_')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ');
-
-            return (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategoryId(category.id)}
-                className="btn px-4 py-2.5 text-uppercase fw-semibold"
-                style={{
-                  borderRadius: '0',
-                  fontSize: '0.82rem',
-                  letterSpacing: '1.5px',
-                  backgroundColor: isActive ? '#D4AF37' : 'transparent',
-                  color: isActive ? '#fff' : '#444',
-                  borderColor: '#D4AF37',
-                  borderWidth: '1px',
-                  borderStyle: 'solid',
-                  transition: 'all 0.3s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                {displayName}
-              </button>
-            );
-          })}
+      {/* Filters & Search Row */}
+      <div className="row g-3 mb-5 align-items-center justify-content-between">
+        {/* Search */}
+        <div className="col-12 col-md-4">
+          <input
+            type="text"
+            className="form-control py-2.5"
+            placeholder="Search hampers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ borderRadius: '0', borderColor: '#ccc' }}
+          />
         </div>
-      )}
 
-      {/* Conditional Rendering State (Skeleton -> Empty/Error -> Grid) */}
-      {loading || productsLoading ? (
+        {/* Categories Tab list */}
+        <div className="col-12 col-md-5 d-flex gap-2 overflow-auto pb-1">
+          <button
+            onClick={() => setSelectedCategoryId('all')}
+            className={`btn btn-sm px-3.5 py-2 text-uppercase fw-semibold ${selectedCategoryId === 'all' ? 'btn-dark' : 'btn-outline-dark'}`}
+            style={{ borderRadius: '0', fontSize: '0.72rem', letterSpacing: '1px' }}
+          >
+            All
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategoryId(category.id)}
+              className={`btn btn-sm px-3.5 py-2 text-uppercase fw-semibold ${selectedCategoryId === category.id ? 'btn-dark' : 'btn-outline-dark'}`}
+              style={{ borderRadius: '0', fontSize: '0.72rem', letterSpacing: '1px', whiteSpace: 'nowrap' }}
+            >
+              {category.categoryName.replace('_', ' ')}
+            </button>
+          ))}
+        </div>
+
+        {/* Sort */}
+        <div className="col-12 col-md-3">
+          <select
+            className="form-select py-2.5"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{ borderRadius: '0', borderColor: '#ccc' }}
+          >
+            <option value="default">Sort by: Default</option>
+            <option value="lowToHigh">Price: Low to High</option>
+            <option value="highToLow">Price: High to Low</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Product Display Grid */}
+      {loading ? (
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 justify-content-center">
           {Array.from({ length: 4 }).map((_, index) => (
             <div key={index} className="col d-flex">
@@ -182,42 +211,26 @@ const FeaturedProducts = ({ onAction }) => {
             </div>
           ))}
         </div>
-      ) : error || products.length === 0 ? (
-        <EmptyState />
+      ) : sortedProducts.length === 0 ? (
+        <div className="text-center py-5 text-muted">
+          <h4>No products found matching the criteria.</h4>
+          <p>Please refine your filter or search query.</p>
+        </div>
       ) : (
-        <>
-          <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 justify-content-center">
-            {products.map((product) => (
-              <div key={product.id} className="col d-flex">
-                <ProductCard 
-                  product={product} 
-                  onAction={onAction} 
-                  onViewDetails={setSelectedProduct} 
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Catalog Button */}
-          <div className="text-center mt-5">
-            <button 
-              type="button"
-              className="btn btn-gold px-5 py-3 text-uppercase fw-bold text-white"
-              style={{ 
-                backgroundColor: '#D4AF37',
-                borderColor: '#D4AF37', 
-                borderRadius: '0',
-                letterSpacing: '2px',
-                fontSize: '0.85rem'
-              }}
-              onClick={() => onAction("All products catalog is now live in categories!")}
-            >
-              Browse Category Selections
-            </button>
-          </div>
-        </>
+        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 justify-content-center">
+          {sortedProducts.map((product) => (
+            <div key={product.id} className="col d-flex">
+              <ProductCard 
+                product={product} 
+                onAction={addToast} 
+                onViewDetails={setSelectedProduct} 
+              />
+            </div>
+          ))}
+        </div>
       )}
-      {/* Product Details Modal Overlay */}
+
+      {/* Details Modal Overlay */}
       {selectedProduct && (
         <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
           <div className="details-modal" onClick={(e) => e.stopPropagation()}>
@@ -227,12 +240,10 @@ const FeaturedProducts = ({ onAction }) => {
                 type="button" 
                 className="btn-close" 
                 onClick={() => setSelectedProduct(null)}
-                aria-label="Close details"
               ></button>
             </div>
             <div className="details-modal-body">
               <div className="details-grid">
-                {/* Left Column: Image */}
                 <div className="details-img-wrapper">
                   <img 
                     src={selectedProduct.imageUrl || "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&q=80&w=600"} 
@@ -243,12 +254,10 @@ const FeaturedProducts = ({ onAction }) => {
                     }}
                   />
                 </div>
-
-                {/* Right Column: Info details */}
                 <div className="details-info">
                   <span className="details-category">{selectedProduct.categoryName || 'Signature Hamper'}</span>
                   <h3 className="details-title">{selectedProduct.name}</h3>
-                  <p className="details-desc">{selectedProduct.description || 'Indulge in our beautifully curated selection of premium ingredients, hand-wrapped with silk ribbons and custom greetings for the ultimate luxury gift hamper experience.'}</p>
+                  <p className="details-desc">{selectedProduct.description}</p>
                   
                   <div className="details-price-row">
                     <span className="details-price">
@@ -265,7 +274,6 @@ const FeaturedProducts = ({ onAction }) => {
                     {selectedProduct.stock <= 0 ? "Out of Stock" : (selectedProduct.stock < 15 ? `Limited Stock: Only ${selectedProduct.stock} left!` : "In Stock - Hand-wrapped to order")}
                   </div>
 
-                  {/* Actions */}
                   <div className="d-flex gap-3 mt-auto pt-3">
                     <button
                       type="button"
@@ -282,17 +290,6 @@ const FeaturedProducts = ({ onAction }) => {
                         "Add to Cart"
                       )}
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-gold px-3.5"
-                      style={{ borderColor: '#D4AF37', color: '#D4AF37', borderRadius: '0' }}
-                      onClick={() => onAction(`"Wishlist" for "${selectedProduct.name}" will be available soon.`)}
-                      title="Add to Wishlist"
-                    >
-                      <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -304,4 +301,4 @@ const FeaturedProducts = ({ onAction }) => {
   );
 };
 
-export default FeaturedProducts;
+export default Shop;

@@ -85,6 +85,37 @@ public class CartServiceImpl implements CartService {
         return cartItemRepository.sumQuantityByUserId(user.getId());
     }
 
+    @Override
+    @Transactional
+    public void updateCartItemQuantity(String userEmail, Long productId, Integer quantity) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
+
+        CartItem cartItem = cartItemRepository.findByUserIdAndProductId(user.getId(), productId)
+                .orElseThrow(() -> new RuntimeException("Cart item not found"));
+
+        Product product = cartItem.getProduct();
+        if (product.getStock() < quantity) {
+            throw new IllegalArgumentException("Not enough stock available for product: " + product.getName());
+        }
+
+        if (quantity <= 0) {
+            cartItemRepository.delete(cartItem);
+        } else {
+            cartItem.setQuantity(quantity);
+            cartItemRepository.save(cartItem);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void removeCartItem(String userEmail, Long productId) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
+
+        cartItemRepository.deleteByUserIdAndProductId(user.getId(), productId);
+    }
+
     private CartItemDTO mapToDTO(CartItem cartItem) {
         Product product = cartItem.getProduct();
         String imageUrl = productImageRepository.findByProductId(product.getId())

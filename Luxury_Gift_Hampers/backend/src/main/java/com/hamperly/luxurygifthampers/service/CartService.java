@@ -8,4 +8,6 @@ public interface CartService {
     void addToCart(String userEmail, Long productId, Integer quantity);
     List<CartItemDTO> getCartItems(String userEmail);
     Integer getCartCount(String userEmail);
+    void updateCartItemQuantity(String userEmail, Long productId, Integer quantity);
+    void removeCartItem(String userEmail, Long productId);
 }

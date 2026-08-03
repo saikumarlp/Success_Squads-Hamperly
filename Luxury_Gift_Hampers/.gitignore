@@ -96,6 +96,7 @@ coverage/
 ############################
 # Package Managers
 ############################
+node_modules/
 .pnpm-store/
 .yarn/
 .yarn-cache/

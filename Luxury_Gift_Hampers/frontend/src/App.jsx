@@ -10,6 +10,10 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import Shop from './pages/Shop';
+import Collections from './pages/Collections';
+import AboutUs from './pages/AboutUs';
+import Contact from './pages/Contact';
 
 function App() {
   return (
@@ -30,11 +34,43 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
+             <Route 
               path="/profile" 
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/shop" 
+              element={
+                <ProtectedRoute>
+                  <Shop />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/collections" 
+              element={
+                <ProtectedRoute>
+                  <Collections />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/about" 
+              element={
+                <ProtectedRoute>
+                  <AboutUs />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/contact" 
+              element={
+                <ProtectedRoute>
+                  <Contact />
                 </ProtectedRoute>
               } 
             />

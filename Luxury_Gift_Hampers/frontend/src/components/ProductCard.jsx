@@ -65,7 +65,7 @@ const formatRupee = (value) => {
 /**
  * Reusable Product Card Component for E-Commerce Grid
  */
-const ProductCard = ({ product, onAction }) => {
+const ProductCard = ({ product, onAction, onViewDetails }) => {
   const {
     id,
     name,
@@ -93,6 +93,15 @@ const ProductCard = ({ product, onAction }) => {
   const isLowStock = stock > 0 && stock < 15;
   const stockStatusText = isOutOfStock ? "Out of Stock" : (isLowStock ? `Only ${stock} left!` : "In Stock");
   const badge = isOutOfStock ? "Out of Stock" : (isLowStock ? "Limited" : null);
+
+  const handleViewDetails = (e) => {
+    e.stopPropagation();
+    if (onViewDetails) {
+      onViewDetails(product);
+    } else {
+      onAction(`"View Details" for "${name}" will be available soon.`);
+    }
+  };
 
   const handleAction = (e, actionName) => {
     e.stopPropagation();
@@ -185,7 +194,7 @@ const ProductCard = ({ product, onAction }) => {
           <button 
             type="button"
             className="btn btn-action-view"
-            onClick={(e) => handleAction(e, 'View Details')}
+            onClick={handleViewDetails}
             style={{ letterSpacing: '0.5px' }}
           >
             View Details

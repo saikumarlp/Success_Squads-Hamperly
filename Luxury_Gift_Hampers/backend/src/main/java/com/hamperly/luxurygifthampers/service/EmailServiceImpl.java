@@ -28,13 +28,18 @@ public class EmailServiceImpl implements EmailService {
     public void sendPasswordResetEmail(String toEmail, String recipientName, String resetLink) {
         String subject = "Password Reset Request - Hamperly Luxury Gift Hampers";
 
-        logger.info("Password Reset Link generated for email [{}]: {}", toEmail, resetLink);
+        logger.info("Password Reset Link generated for email [{}]", toEmail);
 
         try {
             String htmlContent = emailTemplate.buildPasswordResetEmail(recipientName, resetLink);
 
             if (mailSender == null) {
-                logger.warn("JavaMailSender is not configured. Email to [{}] with reset link [{}] logged only.", toEmail, resetLink);
+                String obfuscatedLink = resetLink;
+                if (resetLink != null && resetLink.contains("token=")) {
+                    int tokenIndex = resetLink.indexOf("token=");
+                    obfuscatedLink = resetLink.substring(0, tokenIndex + 6) + "[REDACTED]";
+                }
+                logger.warn("JavaMailSender is not configured. Email to [{}] with reset link [{}] logged only.", toEmail, obfuscatedLink);
                 return;
             }
 

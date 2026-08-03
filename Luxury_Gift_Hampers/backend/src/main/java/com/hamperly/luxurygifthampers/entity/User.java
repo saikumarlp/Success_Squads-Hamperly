@@ -13,13 +13,13 @@ public class User {
     @Column(name = "user_id")
     private Long id;
 
-    @Transient
+    @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
-    @Transient
+    @Column(name = "mobile_number", nullable = false, unique = true, length = 10)
     private String mobileNumber;
 
     @Column(name = "password", nullable = false, length = 255)
@@ -28,16 +28,16 @@ public class User {
     @Column(name = "role", length = 50)
     private String role;
 
-    @Transient
+    @Column(name = "profile_picture_url", length = 500)
     private String profilePictureUrl;
 
-    @Transient
+    @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
-    @Transient
+    @Column(name = "gender", length = 20)
     private String gender;
 
-    @Transient
+    @Column(name = "bio", length = 500)
     private String bio;
 
     @Column(name = "created_at", insertable = false, updatable = false)

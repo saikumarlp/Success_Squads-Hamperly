@@ -17,4 +17,6 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     @Query("SELECT COALESCE(SUM(c.quantity), 0) FROM CartItem c WHERE c.user.id = :userId")
     Integer sumQuantityByUserId(@Param("userId") Long userId);
+
+    void deleteByUserIdAndProductId(Long userId, Long productId);
 }
