@@ -132,6 +132,24 @@ const ProductCard = ({ product, onAction, onViewDetails }) => {
     }
   };
 
+  // Helper to replace the last space with a non-breaking space (\u00a0)
+  // to prevent leaving a single word on its own line (widow)
+  const formatTitle = (titleText) => {
+    if (!titleText) return '';
+    const trimmed = titleText.trim();
+    const lastSpaceIndex = trimmed.lastIndexOf(' ');
+    if (lastSpaceIndex === -1) return trimmed;
+    return trimmed.substring(0, lastSpaceIndex) + '\u00a0' + trimmed.substring(lastSpaceIndex + 1);
+  };
+
+  // Do not restrict title via hardcoded JS limit so CSS line-clamping can work natively on all sizes
+  const processedName = formatTitle(name);
+
+  // Shorten description to a clean preview (approx 120 characters) for the card preview
+  const truncatedDescription = description && description.length > 120
+    ? description.substring(0, 117) + "..."
+    : description;
+
   return (
     <div className="card luxury-card border-0">
       {/* Product Category Badge */}
@@ -153,15 +171,15 @@ const ProductCard = ({ product, onAction, onViewDetails }) => {
       </div>
 
       {/* Product Details Body */}
-      <div className="card-body p-4 d-flex flex-column flex-grow-1">
+      <div className="card-body px-3 py-4 d-flex flex-column flex-grow-1">
         {/* Category */}
         <div className="luxury-category">{categoryName}</div>
 
         {/* Product Title */}
-        <h4 className="luxury-title" title={name}>{name}</h4>
+        <h4 className="luxury-title" title={name}>{processedName}</h4>
 
         {/* Short Description */}
-        <p className="luxury-desc text-muted">{description}</p>
+        <p className="luxury-desc text-muted">{truncatedDescription}</p>
 
         {/* Price Tag Row with Indian Rupee (₹) Symbols */}
         <div className="price-container mt-auto">

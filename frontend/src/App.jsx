@@ -14,6 +14,7 @@ import Shop from './pages/Shop';
 import Collections from './pages/Collections';
 import AboutUs from './pages/AboutUs';
 import Contact from './pages/Contact';
+import Orders from './pages/Orders';
 
 function App() {
   return (
@@ -39,6 +40,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/orders" 
+              element={
+                <ProtectedRoute>
+                  <Orders />
                 </ProtectedRoute>
               } 
             />
