@@ -79,6 +79,7 @@ const Navbar = () => {
               setCartItems([]);
               await fetchCartCount();
               setShowCartDrawer(false);
+              navigate('/orders');
             } else {
               addToast("Payment verification failed. Please contact support.");
             }
@@ -338,6 +339,26 @@ const Navbar = () => {
                     )}
                   </div>
 
+                  <div className="d-flex flex-column gap-2 mb-3">
+                    <button 
+                      onClick={() => {
+                        setShowDropdown(false);
+                        navigate('/orders');
+                      }} 
+                      className="btn btn-gold btn-sm w-100 py-2.5 text-uppercase fw-bold"
+                      style={{ 
+                        backgroundColor: '#D4AF37', 
+                        borderColor: '#D4AF37', 
+                        color: '#fff',
+                        borderRadius: '6px',
+                        letterSpacing: '0.5px',
+                        fontSize: '0.72rem'
+                      }}
+                    >
+                      My Orders
+                    </button>
+                  </div>
+
                   <div className="d-flex gap-2">
                     <button 
                       onClick={() => {
@@ -420,6 +441,21 @@ const Navbar = () => {
                 SHOP
               </Link>
             </li>
+            {user && (
+              <li className="nav-item">
+                <Link 
+                  to="/orders" 
+                  className="nav-link text-start fw-medium small p-0" 
+                  style={{ 
+                    letterSpacing: '0.5px', 
+                    color: location.pathname === '/orders' ? '#D4AF37' : '#212529',
+                    textDecoration: 'none'
+                  }}
+                >
+                  MY ORDERS
+                </Link>
+              </li>
+            )}
             <li className="nav-item">
               <Link 
                 to="/collections" 

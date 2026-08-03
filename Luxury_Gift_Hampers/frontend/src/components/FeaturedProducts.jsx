@@ -248,6 +248,19 @@ const FeaturedProducts = ({ onAction }) => {
                 <div className="details-info">
                   <span className="details-category">{selectedProduct.categoryName || 'Signature Hamper'}</span>
                   <h3 className="details-title">{selectedProduct.name}</h3>
+
+                  {/* Reviews Section */}
+                  <div className="d-flex align-items-center gap-2 mb-3">
+                    <span className="text-gold" style={{ display: 'inline-flex', color: '#D4AF37' }}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <svg key={i} width="16" height="16" fill="currentColor" viewBox="0 0 24 24" className="me-0.5">
+                          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                        </svg>
+                      ))}
+                    </span>
+                    <span className="fw-semibold text-muted small" style={{ fontSize: '0.8rem' }}>(4.8 rating | 35 premium reviews)</span>
+                  </div>
+
                   <p className="details-desc">{selectedProduct.description || 'Indulge in our beautifully curated selection of premium ingredients, hand-wrapped with silk ribbons and custom greetings for the ultimate luxury gift hamper experience.'}</p>
                   
                   <div className="details-price-row">
@@ -263,6 +276,16 @@ const FeaturedProducts = ({ onAction }) => {
                   <div className={`details-stock-status fw-semibold ${selectedProduct.stock <= 0 ? 'text-danger' : (selectedProduct.stock < 15 ? 'text-warning' : 'text-success')}`}>
                     <span className="me-1.5">●</span>
                     {selectedProduct.stock <= 0 ? "Out of Stock" : (selectedProduct.stock < 15 ? `Limited Stock: Only ${selectedProduct.stock} left!` : "In Stock - Hand-wrapped to order")}
+                  </div>
+
+                  {/* Specifications Section */}
+                  <div className="mt-4 pt-3 border-top mb-4">
+                    <span className="d-block text-uppercase fw-bold text-muted mb-2" style={{ fontSize: '0.72rem', letterSpacing: '1px' }}>Specifications</span>
+                    <ul className="list-unstyled small text-muted mb-0 d-flex flex-column gap-1.5" style={{ fontSize: '0.82rem' }}>
+                      <li>• <strong>Gift Style:</strong> Hand-wrapped Signature Luxury Trunk</li>
+                      <li>• <strong>Stock Status:</strong> Ready for custom shipping</li>
+                      <li>• <strong>Presentation:</strong> Elegant gold-inlaid finish with silk ribbons</li>
+                    </ul>
                   </div>
 
                   {/* Actions */}

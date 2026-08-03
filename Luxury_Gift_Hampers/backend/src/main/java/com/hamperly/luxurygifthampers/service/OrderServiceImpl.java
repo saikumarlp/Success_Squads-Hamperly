@@ -1,14 +1,18 @@
 package com.hamperly.luxurygifthampers.service;
 
+import com.hamperly.luxurygifthampers.dto.OrderItemDTO;
+import com.hamperly.luxurygifthampers.dto.OrderResponseDTO;
 import com.hamperly.luxurygifthampers.entity.CartItem;
 import com.hamperly.luxurygifthampers.entity.Order;
 import com.hamperly.luxurygifthampers.entity.OrderItem;
 import com.hamperly.luxurygifthampers.entity.OrderStatus;
 import com.hamperly.luxurygifthampers.entity.Product;
+import com.hamperly.luxurygifthampers.entity.ProductImage;
 import com.hamperly.luxurygifthampers.entity.User;
 import com.hamperly.luxurygifthampers.repository.CartItemRepository;
 import com.hamperly.luxurygifthampers.repository.OrderItemRepository;
 import com.hamperly.luxurygifthampers.repository.OrderRepository;
+import com.hamperly.luxurygifthampers.repository.ProductImageRepository;
 import com.hamperly.luxurygifthampers.repository.ProductRepository;
 import com.hamperly.luxurygifthampers.repository.UserRepository;
 import com.razorpay.RazorpayClient;
@@ -51,6 +55,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private OrderItemRepository orderItemRepository;
+
+    @Autowired
+    private ProductImageRepository productImageRepository;
 
     @Override
     @Transactional
@@ -176,5 +183,55 @@ public class OrderServiceImpl implements OrderService {
             orderRepository.save(order);
             throw new RuntimeException("Payment verification failed: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderResponseDTO> getUserOrders(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
+
+        List<Order> orders = orderRepository.findByUserId(user.getId());
+        List<OrderResponseDTO> response = new ArrayList<>();
+
+        for (Order order : orders) {
+            List<OrderItemDTO> orderItemDTOs = new ArrayList<>();
+            for (OrderItem item : order.getOrderItems()) {
+                String imageUrl = productImageRepository.findByProductId(item.getProduct().getId())
+                        .map(ProductImage::getImageUrl)
+                        .orElse("");
+
+                OrderItemDTO itemDTO = OrderItemDTO.builder()
+                        .productId(item.getProduct().getId())
+                        .productName(item.getProduct().getName())
+                        .quantity(item.getQuantity())
+                        .pricePerUnit(item.getPricePerUnit())
+                        .totalPrice(item.getTotalPrice())
+                        .imageUrl(imageUrl)
+                        .build();
+
+                orderItemDTOs.add(itemDTO);
+            }
+
+            OrderResponseDTO orderDTO = OrderResponseDTO.builder()
+                    .orderId(order.getOrderId())
+                    .totalAmount(order.getTotalAmount())
+                    .status(order.getStatus())
+                    .createdAt(order.getCreatedAt())
+                    .orderItems(orderItemDTOs)
+                    .build();
+
+            response.add(orderDTO);
+        }
+
+        // Sort orders by createdAt in descending order so the newest orders are shown first
+        response.sort((o1, o2) -> {
+            if (o1.getCreatedAt() == null && o2.getCreatedAt() == null) return 0;
+            if (o1.getCreatedAt() == null) return 1;
+            if (o2.getCreatedAt() == null) return -1;
+            return o2.getCreatedAt().compareTo(o1.getCreatedAt());
+        });
+
+        return response;
     }
 }
