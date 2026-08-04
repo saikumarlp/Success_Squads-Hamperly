@@ -59,23 +59,154 @@ const Orders = () => {
     });
   };
 
-  const getStatusBadgeClass = (status) => {
+  const formatEstimatedDelivery = (dateStr) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-IN', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getStatusPill = (status) => {
     switch (status) {
-      case 'SUCCESS':
-      case 'CONFIRMED':
-      case 'DELIVERED':
-        return 'bg-success-subtle text-success border border-success px-3.5 py-1 rounded-pill small fw-bold';
       case 'PENDING':
+        return (
+          <span className="status-pill status-pill-pending">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Pending
+          </span>
+        );
+      case 'CONFIRMED':
+        return (
+          <span className="status-pill status-pill-confirmed">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Confirmed
+          </span>
+        );
       case 'PACKED':
+        return (
+          <span className="status-pill status-pill-packed">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            Packed
+          </span>
+        );
       case 'SHIPPED':
+        return (
+          <span className="status-pill status-pill-shipped">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125a1.125 1.125 0 001.125-1.125V9.75M8.25 18.75V14.25m0 0H21m-9.75 0h7.5" />
+            </svg>
+            Shipped
+          </span>
+        );
       case 'OUT_FOR_DELIVERY':
-        return 'bg-warning-subtle text-warning border border-warning px-3.5 py-1 rounded-pill small fw-bold';
-      case 'FAILED':
+        return (
+          <span className="status-pill status-pill-out_for_delivery">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1H9v1m4-1h2m0 0h4a2 2 0 002-2v-3a2 2 0 00-2-2h-3v5z" />
+            </svg>
+            Out for Delivery
+          </span>
+        );
+      case 'DELIVERED':
+        return (
+          <span className="status-pill status-pill-delivered">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            Delivered
+          </span>
+        );
       case 'CANCELLED':
-        return 'bg-danger-subtle text-danger border border-danger px-3.5 py-1 rounded-pill small fw-bold';
+      case 'FAILED':
+        return (
+          <span className={`status-pill status-pill-${status.toLowerCase()}`}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {status}
+          </span>
+        );
       default:
-        return 'bg-secondary-subtle text-secondary border border-secondary px-3.5 py-1 rounded-pill small fw-bold';
+        return (
+          <span className="status-pill bg-light text-dark border">
+            {status}
+          </span>
+        );
     }
+  };
+
+  const renderStepper = (status) => {
+    if (status === 'CANCELLED' || status === 'FAILED') {
+      return (
+        <div className="d-flex align-items-center gap-2 p-3 bg-danger-subtle rounded-3 text-danger border border-danger-subtle mt-4">
+          <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="small fw-semibold">This order was {status === 'CANCELLED' ? 'cancelled' : 'marked as failed'}.</span>
+        </div>
+      );
+    }
+
+    const steps = [
+      { key: 'PENDING', label: 'Placed' },
+      { key: 'CONFIRMED', label: 'Confirmed' },
+      { key: 'PACKED', label: 'Packed' },
+      { key: 'SHIPPED', label: 'Shipped' },
+      { key: 'DELIVERED', label: 'Delivered' }
+    ];
+
+    const getStatusIndex = (currentStatus) => {
+      switch (currentStatus) {
+        case 'PENDING':
+          return 0;
+        case 'CONFIRMED':
+          return 1;
+        case 'PACKED':
+          return 2;
+        case 'SHIPPED':
+        case 'OUT_FOR_DELIVERY':
+          return 3;
+        case 'DELIVERED':
+          return 4;
+        default:
+          return 0;
+      }
+    };
+
+    const currentIndex = getStatusIndex(status);
+    const progressWidths = ['0%', '25%', '50%', '75%', '100%'];
+    const barWidth = progressWidths[currentIndex];
+
+    return (
+      <div className="progress-stepper mt-4">
+        <div className="progress-stepper-bar" style={{ width: barWidth }}></div>
+        {steps.map((step, idx) => {
+          let stepClass = 'stepper-step';
+          if (idx < currentIndex) {
+            stepClass += ' completed';
+          } else if (idx === currentIndex) {
+            stepClass += ' active';
+          }
+
+          return (
+            <div key={step.key} className={stepClass}>
+              <div className="stepper-dot"></div>
+              <div className="stepper-label d-none d-sm-block">{step.label}</div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -125,21 +256,20 @@ const Orders = () => {
           </button>
         </div>
       ) : (
-        <div className="d-flex flex-column gap-4">
+        <div className="d-flex flex-column gap-4" style={{ maxWidth: '960px', margin: '0 auto' }}>
           {orders.map((order) => (
             <div 
               key={order.orderId} 
-              className="card border-0 shadow-sm bg-white" 
-              style={{ borderLeft: '4px solid #D4AF37', borderRadius: '0' }}
+              className="luxury-order-card border-0"
             >
               {/* Order Card Header */}
-              <div className="card-header bg-white border-bottom py-3.5 px-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+              <div className="luxury-order-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                 <div>
                   <div className="d-flex align-items-center gap-2 flex-wrap">
-                    <span className="text-muted text-uppercase fw-bold" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>
+                    <span className="text-muted text-uppercase fw-bold" style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}>
                       Order ID:
                     </span>
-                    <span className="badge bg-light text-dark border font-monospace py-1.5 px-2.5" style={{ fontSize: '0.8rem' }}>
+                    <span className="badge bg-light text-dark border font-monospace py-1 px-2.5" style={{ fontSize: '0.78rem' }}>
                       {order.orderId}
                     </span>
                     <button 
@@ -149,78 +279,87 @@ const Orders = () => {
                       style={{ fontSize: '0.75rem', textDecoration: 'none' }}
                       title="Copy Order ID"
                     >
-                      <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                       </svg>
                     </button>
                   </div>
-                  <div className="text-muted small mt-1.5">
-                    Ordered on: <span className="fw-semibold text-dark">{formatDate(order.createdAt)}</span>
+                  <div className="text-muted small mt-1">
+                    Placed on: <span className="fw-semibold text-dark">{formatDate(order.createdAt)}</span>
                   </div>
+                  {order.estimatedDelivery && order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && order.status !== 'FAILED' && (
+                    <div className="text-muted small mt-1 d-flex align-items-center gap-1">
+                      <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ color: '#16a34a' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125a1.125 1.125 0 001.125-1.125V9.75M8.25 18.75V14.25m0 0H21m-9.75 0h7.5" />
+                      </svg>
+                      <span>Est. Delivery: <strong className="text-dark">{formatEstimatedDelivery(order.estimatedDelivery)}</strong></span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="d-flex align-items-center gap-3 flex-wrap">
-                  <div className="text-md-end">
-                    <div className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>
-                      Total Amount
+                <div className="d-flex align-items-center gap-3 flex-wrap justify-content-between justify-content-md-end">
+                  <div className="text-start text-md-end me-0 me-md-2">
+                    <div className="text-muted text-uppercase fw-semibold" style={{ fontSize: '0.62rem', letterSpacing: '0.5px' }}>
+                      Grand Total
                     </div>
                     <div className="fw-bold text-dark fs-5">
                       {formatCurrency(order.totalAmount)}
                     </div>
                   </div>
-                  <div>
-                    <span className={getStatusBadgeClass(order.status)}>
-                      {order.status}
-                    </span>
-                  </div>
-                  <div>
+                  <div className="d-flex align-items-center gap-2">
+                    {getStatusPill(order.status)}
                     <button
                       onClick={() => navigate(`/orders/${order.orderId}`)}
-                      className="btn btn-gold btn-sm px-3 text-white text-uppercase fw-semibold"
-                      style={{ backgroundColor: '#D4AF37', borderColor: '#D4AF37', borderRadius: '0', fontSize: '0.75rem', letterSpacing: '0.5px' }}
+                      className="btn-premium-action"
                     >
-                      View Details
+                      <span>Details</span>
+                      <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                      </svg>
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Order Card Body - Items List */}
-              <div className="card-body p-4">
+              <div className="card-body p-4 bg-white">
                 <div className="d-flex flex-column gap-3">
                   {order.orderItems && order.orderItems.map((item, index) => (
                     <div 
                       key={item.productId || index} 
-                      className="d-flex align-items-center gap-3 py-2"
-                      style={{ borderBottom: index < order.orderItems.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none' }}
+                      className="d-flex align-items-center gap-4 py-2"
+                      style={{ borderBottom: index < order.orderItems.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none' }}
                     >
                       <img 
                         src={item.imageUrl || "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&q=80&w=200"} 
                         alt={item.productName} 
-                        className="img-thumbnail rounded-0"
-                        style={{ width: '65px', height: '65px', objectFit: 'cover', borderColor: 'rgba(212, 175, 55, 0.15)' }}
+                        className="img-thumbnail border-0 flex-shrink-0"
+                        style={{ width: '95px', height: '95px', objectFit: 'cover', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
                         onError={(e) => {
                           e.target.src = "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&q=80&w=200";
                         }}
                       />
                       <div className="flex-grow-1 min-w-0">
-                        <h6 className="mb-0.5 fw-bold text-dark text-truncate" style={{ fontSize: '0.95rem' }}>
+                        <h5 className="mb-1.5 fw-bold text-dark text-truncate" style={{ fontSize: '1.05rem', fontFamily: "var(--body-font)" }}>
                           {item.productName}
-                        </h6>
+                        </h5>
                         <div className="text-muted small">
-                          Qty: <span className="fw-semibold text-dark">{item.quantity}</span> 
-                          <span className="mx-2 text-muted">|</span> 
-                          Price: <span className="fw-semibold text-dark">{formatCurrency(item.pricePerUnit)}</span>
+                          Quantity: <span className="fw-semibold text-dark">{item.quantity}</span> 
+                          <span className="mx-2.5 text-muted">|</span> 
+                          Unit Price: <span className="fw-semibold text-dark">{formatCurrency(item.pricePerUnit)}</span>
                         </div>
                       </div>
                       <div className="text-end flex-shrink-0">
-                        <span className="fw-bold text-dark" style={{ fontSize: '0.95rem' }}>
+                        <span className="fw-bold text-dark fs-6">
                           {formatCurrency(item.totalPrice)}
                         </span>
                       </div>
                     </div>
                   ))}
                 </div>
+
+                {/* Progress Indicator */}
+                {renderStepper(order.status)}
               </div>
             </div>
           ))}

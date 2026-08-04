@@ -1037,3 +1037,195 @@ body {
     opacity: 1;
   }
 }
+
+/* Premium Order History Styles */
+.luxury-order-card {
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.015), 0 1px 3px rgba(0, 0, 0, 0.01) !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  overflow: hidden;
+}
+
+.luxury-order-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06), 0 1px 6px rgba(0, 0, 0, 0.02) !important;
+  border-color: rgba(212, 175, 55, 0.25) !important;
+}
+
+.luxury-order-header {
+  background-color: #fafaf9 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  padding: 1.25rem 1.5rem !important;
+}
+
+/* Filled Status Pills */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.status-pill-pending {
+  background-color: #fffbeb !important;
+  color: #d97706 !important;
+  border-color: #fef3c7 !important;
+}
+
+.status-pill-confirmed {
+  background-color: #eff6ff !important;
+  color: #2563eb !important;
+  border-color: #dbeafe !important;
+}
+
+.status-pill-packed {
+  background-color: #fff7ed !important;
+  color: #ea580c !important;
+  border-color: #ffedd5 !important;
+}
+
+.status-pill-shipped {
+  background-color: #f5f3ff !important;
+  color: #4f46e5 !important;
+  border-color: #ede9fe !important;
+}
+
+.status-pill-out_for_delivery {
+  background-color: #f0fdfa !important;
+  color: #0d9488 !important;
+  border-color: #ccfbf1 !important;
+}
+
+.status-pill-delivered {
+  background-color: #f0fdf4 !important;
+  color: #16a34a !important;
+  border-color: #dcfce7 !important;
+}
+
+.status-pill-cancelled, .status-pill-failed {
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+  border-color: #fee2e2 !important;
+}
+
+/* Compact Step Progress */
+.progress-stepper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  margin: 1.5rem 0 0.5rem 0;
+  padding: 0 10px;
+}
+
+.progress-stepper::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #e5e7eb;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.progress-stepper-bar {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 2px;
+  background-color: var(--gold);
+  transform: translateY(-50%);
+  z-index: 2;
+  transition: width 0.4s ease;
+}
+
+.stepper-step {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stepper-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 2.5px solid #d1d5db;
+  transition: all 0.3s ease;
+}
+
+.stepper-step.active .stepper-dot {
+  border-color: var(--gold);
+  background-color: var(--gold);
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
+}
+
+.stepper-step.completed .stepper-dot {
+  border-color: var(--gold);
+  background-color: var(--gold);
+}
+
+.stepper-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #ffffff;
+  padding: 0 6px;
+}
+
+.stepper-step.active .stepper-label,
+.stepper-step.completed .stepper-label {
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+/* Premium Button Hover Animation */
+.btn-premium-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 9px 18px !important;
+  border-radius: 30px !important;
+  border: 1px solid #1a1a1a !important;
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer;
+  outline: none;
+}
+
+.btn-premium-action:hover {
+  background-color: var(--gold) !important;
+  border-color: var(--gold) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25) !important;
+}
+
+.btn-premium-action svg {
+  transition: transform 0.3s ease;
+}
+
+.btn-premium-action:hover svg {
+  transform: translateX(4px);
+}
