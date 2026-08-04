@@ -26,6 +26,7 @@ CREATE TABLE users (
     mobile_number VARCHAR(10) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     role VARCHAR(50) DEFAULT 'user',
+    blocked TINYINT(1) DEFAULT 0,
     profile_picture_url VARCHAR(500) DEFAULT NULL,
     date_of_birth DATE DEFAULT NULL,
     gender VARCHAR(20) DEFAULT NULL,

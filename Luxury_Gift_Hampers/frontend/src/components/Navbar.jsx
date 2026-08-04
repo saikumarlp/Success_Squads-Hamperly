@@ -201,6 +201,13 @@ const Navbar = () => {
       <div className="container d-flex align-items-center justify-content-between">
         {/* Brand Logo */}
         <Link className="navbar-brand d-flex align-items-center text-dark me-3" to={user ? "/dashboard" : "/login"}>
+          <img 
+            src="/Hamperly.png" 
+            alt="Luxury Gift Hampers Logo" 
+            className="me-2"
+            style={{ height: '38px', width: 'auto', objectFit: 'contain' }}
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
           <span style={{ 
             fontFamily: "'Playfair Display', serif", 
             fontWeight: '700', 

@@ -28,6 +28,9 @@ public class User {
     @Column(name = "role", length = 50)
     private String role;
 
+    @Column(name = "blocked")
+    private Boolean blocked = false;
+
     @Column(name = "profile_picture_url", length = 500)
     private String profilePictureUrl;
 
@@ -75,7 +78,13 @@ public class User {
         if (this.role == null) {
             this.role = "CUSTOMER";
         }
+        if (this.blocked == null) {
+            this.blocked = false;
+        }
     }
+
+    public Boolean getBlocked() { return blocked; }
+    public void setBlocked(Boolean blocked) { this.blocked = blocked; }
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -126,6 +135,7 @@ public class User {
         private LocalDate dateOfBirth;
         private String gender;
         private String bio;
+        private Boolean blocked;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
 
@@ -139,11 +149,14 @@ public class User {
         public UserBuilder dateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; return this; }
         public UserBuilder gender(String gender) { this.gender = gender; return this; }
         public UserBuilder bio(String bio) { this.bio = bio; return this; }
+        public UserBuilder blocked(Boolean blocked) { this.blocked = blocked; return this; }
         public UserBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
         public UserBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
 
         public User build() {
-            return new User(id, fullName, email, mobileNumber, password, role, profilePictureUrl, dateOfBirth, gender, bio, createdAt, updatedAt);
+            User u = new User(id, fullName, email, mobileNumber, password, role, profilePictureUrl, dateOfBirth, gender, bio, createdAt, updatedAt);
+            u.setBlocked(this.blocked != null ? this.blocked : false);
+            return u;
         }
     }
 
