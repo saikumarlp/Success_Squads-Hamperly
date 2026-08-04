@@ -134,3 +134,17 @@ $RECYCLE.BIN/
 application-local.properties
 application-dev.properties
 application-prod.properties
+
+# Custom Security and Hygiene Rules
+.env
+*.env
+backend/.env
+frontend/.env
+node_modules/
+target/
+dist/
+build/
+logs/
+*.log
+*.pem
+*.key
