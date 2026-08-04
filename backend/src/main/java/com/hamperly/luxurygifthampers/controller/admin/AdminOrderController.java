@@ -17,8 +17,10 @@ public class AdminOrderController {
     private AdminOrderService adminOrderService;
 
     @GetMapping
-    public ResponseEntity<List<AdminOrderResponse>> getAllOrders() {
-        return ResponseEntity.ok(adminOrderService.getAllOrders());
+    public ResponseEntity<List<AdminOrderResponse>> getAllOrders(
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "status", required = false) String status) {
+        return ResponseEntity.ok(adminOrderService.getOrders(search, status));
     }
 
     @PatchMapping("/{id}/status")

@@ -1,7 +1,10 @@
 import api from '../api';
 
-export const getAdminOrders = async () => {
-  const response = await api.get('/admin/orders');
+export const getAdminOrders = async (search, status) => {
+  const params = {};
+  if (search) params.search = search;
+  if (status) params.status = status;
+  const response = await api.get('/admin/orders', { params });
   return response.data;
 };
 

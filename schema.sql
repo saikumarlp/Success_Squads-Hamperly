@@ -2,12 +2,14 @@
 -- Host: localhost | Port: 3309 (as configured in .env)
 
 -- Create Database if not exists
-CREATE DATABASE IF NOT EXISTS luxury_gift_hampers;
-USE luxury_gift_hampers;
+CREATE DATABASE IF NOT EXISTS e_commerce;
+USE e_commerce;
 
 -- Disable foreign key checks to drop existing tables safely
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS order_items;
+DROP TABLE IF EXISTS invoices;
+DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS orders;
 DROP TABLE IF EXISTS cart_items;
 DROP TABLE IF EXISTS productimages;
@@ -98,7 +100,29 @@ CREATE TABLE orders (
     order_id VARCHAR(255) PRIMARY KEY,
     user_id INT NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
-    status ENUM('PENDING', 'SUCCESS', 'FAILED') NOT NULL DEFAULT 'PENDING',
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    item_total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    discount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    coupon_discount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    shipping_charge DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    tax DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    grand_total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    shipping_address VARCHAR(500) NULL,
+    city VARCHAR(100) NULL,
+    state VARCHAR(100) NULL,
+    country VARCHAR(100) NULL,
+    postal_code VARCHAR(20) NULL,
+    payment_id VARCHAR(255) NULL,
+    payment_method VARCHAR(100) NULL,
+    payment_status VARCHAR(50) NULL DEFAULT 'PENDING',
+    estimated_delivery TIMESTAMP NULL,
+    tracking_number VARCHAR(255) NULL,
+    confirmed_at TIMESTAMP NULL,
+    packed_at TIMESTAMP NULL,
+    shipped_at TIMESTAMP NULL,
+    out_for_delivery_at TIMESTAMP NULL,
+    delivered_at TIMESTAMP NULL,
+    cancelled_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -114,6 +138,26 @@ CREATE TABLE order_items (
     total_price DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
+);
+
+-- 8b. Create Invoices Table
+CREATE TABLE invoices (
+    invoice_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id VARCHAR(255) NOT NULL,
+    invoice_number VARCHAR(255) NOT NULL UNIQUE,
+    pdf_path VARCHAR(255) NOT NULL,
+    generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
+);
+
+-- 8c. Create Notifications Table
+CREATE TABLE notifications (
+    notification_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    message VARCHAR(500) NOT NULL,
+    is_read TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- 9. Seed Users Sample Data

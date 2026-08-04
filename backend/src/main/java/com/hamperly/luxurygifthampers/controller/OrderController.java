@@ -5,14 +5,13 @@ import com.hamperly.luxurygifthampers.dto.OrderResponseDTO;
 import com.hamperly.luxurygifthampers.service.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,12 +25,14 @@ public class OrderController {
     private OrderService orderService;
 
     @PostMapping("/create")
-    public ResponseEntity<?> createOrder(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<?> createOrder(
+            @RequestBody Map<String, String> shippingDetails,
+            @AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) {
             return ResponseEntity.status(401).build();
         }
         try {
-            Map<String, Object> orderDetails = orderService.createOrder(userDetails.getUsername());
+            Map<String, Object> orderDetails = orderService.createOrder(userDetails.getUsername(), shippingDetails);
             return ResponseEntity.ok(orderDetails);
         } catch (Exception e) {
             Map<String, String> errorResponse = new HashMap<>();
@@ -74,6 +75,62 @@ public class OrderController {
         try {
             List<OrderResponseDTO> orders = orderService.getUserOrders(userDetails.getUsername());
             return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getOrderById(
+            @PathVariable("id") String id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        try {
+            OrderResponseDTO order = orderService.getOrderById(id, userDetails.getUsername());
+            return ResponseEntity.ok(order);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @GetMapping("/{id}/tracking")
+    public ResponseEntity<?> getOrderTracking(
+            @PathVariable("id") String id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        try {
+            List<Map<String, Object>> tracking = orderService.getOrderTracking(id, userDetails.getUsername());
+            return ResponseEntity.ok(tracking);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @GetMapping("/{id}/invoice")
+    public ResponseEntity<?> getInvoice(
+            @PathVariable("id") String id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        try {
+            String path = orderService.getOrderInvoicePath(id, userDetails.getUsername());
+            FileSystemResource resource = new FileSystemResource(path);
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Invoice_" + id + ".pdf\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(resource);
         } catch (Exception e) {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("message", e.getMessage());

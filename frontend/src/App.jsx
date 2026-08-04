@@ -19,6 +19,7 @@ import Collections from './pages/Collections';
 import AboutUs from './pages/AboutUs';
 import Contact from './pages/Contact';
 import Orders from './pages/Orders';
+import OrderDetails from './pages/OrderDetails';
 
 // Admin panel layout & pages
 import AdminLayout from './layouts/AdminLayout/AdminLayout';
@@ -95,6 +96,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Orders />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/orders/:orderId" 
+                element={
+                  <ProtectedRoute>
+                    <OrderDetails />
                   </ProtectedRoute>
                 } 
               />

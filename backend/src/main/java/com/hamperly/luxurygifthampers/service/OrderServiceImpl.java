@@ -2,19 +2,8 @@ package com.hamperly.luxurygifthampers.service;
 
 import com.hamperly.luxurygifthampers.dto.OrderItemDTO;
 import com.hamperly.luxurygifthampers.dto.OrderResponseDTO;
-import com.hamperly.luxurygifthampers.entity.CartItem;
-import com.hamperly.luxurygifthampers.entity.Order;
-import com.hamperly.luxurygifthampers.entity.OrderItem;
-import com.hamperly.luxurygifthampers.entity.OrderStatus;
-import com.hamperly.luxurygifthampers.entity.Product;
-import com.hamperly.luxurygifthampers.entity.ProductImage;
-import com.hamperly.luxurygifthampers.entity.User;
-import com.hamperly.luxurygifthampers.repository.CartItemRepository;
-import com.hamperly.luxurygifthampers.repository.OrderItemRepository;
-import com.hamperly.luxurygifthampers.repository.OrderRepository;
-import com.hamperly.luxurygifthampers.repository.ProductImageRepository;
-import com.hamperly.luxurygifthampers.repository.ProductRepository;
-import com.hamperly.luxurygifthampers.repository.UserRepository;
+import com.hamperly.luxurygifthampers.entity.*;
+import com.hamperly.luxurygifthampers.repository.*;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 import com.razorpay.Utils;
@@ -27,10 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -59,9 +45,15 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private ProductImageRepository productImageRepository;
 
+    @Autowired
+    private InvoiceRepository invoiceRepository;
+
+    @Autowired
+    private InvoiceGenerator invoiceGenerator;
+
     @Override
     @Transactional
-    public Map<String, Object> createOrder(String userEmail) {
+    public Map<String, Object> createOrder(String userEmail, Map<String, String> shippingDetails) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
 
@@ -70,22 +62,37 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Cart is empty");
         }
 
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        // Calculate Cost Breakdown
+        BigDecimal itemTotal = BigDecimal.ZERO;
         for (CartItem item : cartItems) {
             Product product = item.getProduct();
             if (product.getStock() < item.getQuantity()) {
                 throw new IllegalArgumentException("Not enough stock available for product: " + product.getName());
             }
-            BigDecimal itemTotal = product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-            totalAmount = totalAmount.add(itemTotal);
+            BigDecimal itemTotalCost = product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+            itemTotal = itemTotal.add(itemTotalCost);
         }
+
+        // Standard Calculations:
+        // Discount: mock 0 or custom
+        BigDecimal discount = BigDecimal.ZERO;
+        BigDecimal couponDiscount = BigDecimal.ZERO;
+        
+        // Shipping Charge: If itemTotal >= 3000 -> Free, else 150
+        BigDecimal shippingCharge = itemTotal.compareTo(new BigDecimal("3000")) >= 0 ? BigDecimal.ZERO : new BigDecimal("150.00");
+        
+        // Tax (GST): 18% of itemTotal
+        BigDecimal tax = itemTotal.multiply(new BigDecimal("0.18")).setScale(2, BigDecimal.ROUND_HALF_UP);
+        
+        // Grand Total
+        BigDecimal grandTotal = itemTotal.add(shippingCharge).add(tax).subtract(discount).subtract(couponDiscount);
 
         try {
             RazorpayClient razorpayClient = new RazorpayClient(keyId, keySecret);
 
             JSONObject orderRequest = new JSONObject();
-            // Razorpay amount is in paise (e.g. 100 paise = 1 INR)
-            long amountInPaise = totalAmount.multiply(new BigDecimal(100)).longValue();
+            // Razorpay amount is in paise
+            long amountInPaise = grandTotal.multiply(new BigDecimal(100)).longValue();
             orderRequest.put("amount", amountInPaise);
             orderRequest.put("currency", "INR");
             orderRequest.put("receipt", "rcpt_" + System.currentTimeMillis());
@@ -96,8 +103,22 @@ public class OrderServiceImpl implements OrderService {
             Order order = Order.builder()
                     .orderId(razorpayOrderId)
                     .user(user)
-                    .totalAmount(totalAmount)
+                    .totalAmount(grandTotal)
                     .status(OrderStatus.PENDING)
+                    .itemTotal(itemTotal)
+                    .discount(discount)
+                    .couponDiscount(couponDiscount)
+                    .shippingCharge(shippingCharge)
+                    .tax(tax)
+                    .grandTotal(grandTotal)
+                    .shippingAddress(shippingDetails.get("shippingAddress"))
+                    .city(shippingDetails.get("city"))
+                    .state(shippingDetails.get("state"))
+                    .country(shippingDetails.get("country"))
+                    .postalCode(shippingDetails.get("postalCode"))
+                    .paymentStatus("PENDING")
+                    .estimatedDelivery(LocalDateTime.now().plusDays(5))
+                    .trackingNumber("TRK-" + System.currentTimeMillis())
                     .build();
 
             order = orderRepository.save(order);
@@ -105,14 +126,14 @@ public class OrderServiceImpl implements OrderService {
             List<OrderItem> orderItems = new ArrayList<>();
             for (CartItem item : cartItems) {
                 BigDecimal price = item.getProduct().getPrice();
-                BigDecimal itemTotal = price.multiply(BigDecimal.valueOf(item.getQuantity()));
+                BigDecimal itemTotalCost = price.multiply(BigDecimal.valueOf(item.getQuantity()));
 
                 OrderItem orderItem = OrderItem.builder()
                         .order(order)
                         .product(item.getProduct())
                         .quantity(item.getQuantity())
                         .pricePerUnit(price)
-                        .totalPrice(itemTotal)
+                        .totalPrice(itemTotalCost)
                         .build();
 
                 orderItemRepository.save(orderItem);
@@ -156,12 +177,17 @@ public class OrderServiceImpl implements OrderService {
             boolean isValid = Utils.verifyPaymentSignature(options, keySecret);
             if (!isValid) {
                 order.setStatus(OrderStatus.FAILED);
+                order.setPaymentStatus("FAILED");
                 orderRepository.save(order);
                 throw new RuntimeException("Invalid payment signature verification failed");
             }
 
-            // Payment is valid, update order status to SUCCESS
-            order.setStatus(OrderStatus.SUCCESS);
+            // Payment is valid, update order status to CONFIRMED
+            order.setStatus(OrderStatus.CONFIRMED);
+            order.setPaymentStatus("PAID");
+            order.setPaymentId(razorpayPaymentId);
+            order.setPaymentMethod("Razorpay (Online)");
+            order.setConfirmedAt(LocalDateTime.now());
             orderRepository.save(order);
 
             // Deduct stock for each purchased item
@@ -180,6 +206,7 @@ public class OrderServiceImpl implements OrderService {
 
         } catch (Exception e) {
             order.setStatus(OrderStatus.FAILED);
+            order.setPaymentStatus("FAILED");
             orderRepository.save(order);
             throw new RuntimeException("Payment verification failed: " + e.getMessage(), e);
         }
@@ -195,36 +222,10 @@ public class OrderServiceImpl implements OrderService {
         List<OrderResponseDTO> response = new ArrayList<>();
 
         for (Order order : orders) {
-            List<OrderItemDTO> orderItemDTOs = new ArrayList<>();
-            for (OrderItem item : order.getOrderItems()) {
-                String imageUrl = productImageRepository.findByProductId(item.getProduct().getId())
-                        .map(ProductImage::getImageUrl)
-                        .orElse("");
-
-                OrderItemDTO itemDTO = OrderItemDTO.builder()
-                        .productId(item.getProduct().getId())
-                        .productName(item.getProduct().getName())
-                        .quantity(item.getQuantity())
-                        .pricePerUnit(item.getPricePerUnit())
-                        .totalPrice(item.getTotalPrice())
-                        .imageUrl(imageUrl)
-                        .build();
-
-                orderItemDTOs.add(itemDTO);
-            }
-
-            OrderResponseDTO orderDTO = OrderResponseDTO.builder()
-                    .orderId(order.getOrderId())
-                    .totalAmount(order.getTotalAmount())
-                    .status(order.getStatus())
-                    .createdAt(order.getCreatedAt())
-                    .orderItems(orderItemDTOs)
-                    .build();
-
-            response.add(orderDTO);
+            response.add(mapToDTO(order));
         }
 
-        // Sort orders by createdAt in descending order so the newest orders are shown first
+        // Sort orders by createdAt in descending order
         response.sort((o1, o2) -> {
             if (o1.getCreatedAt() == null && o2.getCreatedAt() == null) return 0;
             if (o1.getCreatedAt() == null) return 1;
@@ -233,5 +234,163 @@ public class OrderServiceImpl implements OrderService {
         });
 
         return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderResponseDTO getOrderById(String orderId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Unauthorized: This order does not belong to you.");
+        }
+
+        return mapToDTO(order);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getOrderTracking(String orderId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        OrderStatus currentStatus = order.getStatus();
+        
+        List<Map<String, Object>> tracking = new ArrayList<>();
+
+        // Helper to check if a step is completed and get its timestamp
+        tracking.add(createTrackingStep("PENDING", "Order Placed", true, order.getCreatedAt()));
+        
+        boolean isConfirmed = currentStatus == OrderStatus.CONFIRMED || currentStatus == OrderStatus.PACKED || 
+                             currentStatus == OrderStatus.SHIPPED || currentStatus == OrderStatus.OUT_FOR_DELIVERY || 
+                             currentStatus == OrderStatus.DELIVERED;
+        tracking.add(createTrackingStep("CONFIRMED", "Confirmed", isConfirmed, order.getConfirmedAt()));
+
+        boolean isPacked = currentStatus == OrderStatus.PACKED || currentStatus == OrderStatus.SHIPPED || 
+                          currentStatus == OrderStatus.OUT_FOR_DELIVERY || currentStatus == OrderStatus.DELIVERED;
+        tracking.add(createTrackingStep("PACKED", "Packed", isPacked, order.getPackedAt()));
+
+        boolean isShipped = currentStatus == OrderStatus.SHIPPED || currentStatus == OrderStatus.OUT_FOR_DELIVERY || 
+                           currentStatus == OrderStatus.DELIVERED;
+        tracking.add(createTrackingStep("SHIPPED", "Shipped", isShipped, order.getShippedAt()));
+
+        boolean isOut = currentStatus == OrderStatus.OUT_FOR_DELIVERY || currentStatus == OrderStatus.DELIVERED;
+        tracking.add(createTrackingStep("OUT_FOR_DELIVERY", "Out for Delivery", isOut, order.getOutForDeliveryAt()));
+
+        boolean isDelivered = currentStatus == OrderStatus.DELIVERED;
+        tracking.add(createTrackingStep("DELIVERED", "Delivered", isDelivered, order.getDeliveredAt()));
+
+        return tracking;
+    }
+
+    @Override
+    @Transactional
+    public String getOrderInvoicePath(String orderId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + userEmail));
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Unauthorized access to invoice");
+        }
+
+        if (order.getStatus() != OrderStatus.DELIVERED) {
+            throw new IllegalArgumentException("Invoice is not generated yet. Order status must be DELIVERED.");
+        }
+
+        Optional<Invoice> existingInvoice = invoiceRepository.findByOrderId(orderId);
+        if (existingInvoice.isPresent()) {
+            return existingInvoice.get().getPdfPath();
+        }
+
+        // Generate invoice PDF
+        String path = invoiceGenerator.generateInvoicePdf(order);
+
+        Invoice invoice = Invoice.builder()
+                .orderId(orderId)
+                .invoiceNumber("INV-" + orderId.substring(Math.max(0, orderId.length() - 8)).toUpperCase())
+                .pdfPath(path)
+                .generatedAt(LocalDateTime.now())
+                .build();
+        invoiceRepository.save(invoice);
+
+        return path;
+    }
+
+    private Map<String, Object> createTrackingStep(String status, String name, boolean completed, LocalDateTime timestamp) {
+        Map<String, Object> step = new HashMap<>();
+        step.put("status", status);
+        step.put("name", name);
+        step.put("completed", completed);
+        step.put("timestamp", timestamp);
+        return step;
+    }
+
+    private OrderResponseDTO mapToDTO(Order order) {
+        List<OrderItemDTO> orderItemDTOs = new ArrayList<>();
+        for (OrderItem item : order.getOrderItems()) {
+            String imageUrl = productImageRepository.findByProductId(item.getProduct().getId())
+                    .map(ProductImage::getImageUrl)
+                    .orElse("");
+
+            OrderItemDTO itemDTO = OrderItemDTO.builder()
+                    .productId(item.getProduct().getId())
+                    .productName(item.getProduct().getName())
+                    .quantity(item.getQuantity())
+                    .pricePerUnit(item.getPricePerUnit())
+                    .totalPrice(item.getTotalPrice())
+                    .imageUrl(imageUrl)
+                    .brand("Hamperly")
+                    .category(item.getProduct().getCategory() != null ? item.getProduct().getCategory().getCategoryName() : "General")
+                    .build();
+
+            orderItemDTOs.add(itemDTO);
+        }
+
+        return OrderResponseDTO.builder()
+                .orderId(order.getOrderId())
+                .totalAmount(order.getTotalAmount())
+                .status(order.getStatus())
+                .createdAt(order.getCreatedAt())
+                .orderItems(orderItemDTOs)
+                .itemTotal(order.getItemTotal())
+                .discount(order.getDiscount())
+                .couponDiscount(order.getCouponDiscount())
+                .shippingCharge(order.getShippingCharge())
+                .tax(order.getTax())
+                .grandTotal(order.getGrandTotal())
+                .shippingAddress(order.getShippingAddress())
+                .city(order.getCity())
+                .state(order.getState())
+                .country(order.getCountry())
+                .postalCode(order.getPostalCode())
+                .customerName(order.getUser() != null ? order.getUser().getFullName() : "N/A")
+                .customerEmail(order.getUser() != null ? order.getUser().getEmail() : "N/A")
+                .customerPhone(order.getUser() != null ? order.getUser().getMobileNumber() : "N/A")
+                .paymentId(order.getPaymentId())
+                .paymentMethod(order.getPaymentMethod())
+                .paymentStatus(order.getPaymentStatus())
+                .estimatedDelivery(order.getEstimatedDelivery())
+                .trackingNumber(order.getTrackingNumber())
+                .confirmedAt(order.getConfirmedAt())
+                .packedAt(order.getPackedAt())
+                .shippedAt(order.getShippedAt())
+                .outForDeliveryAt(order.getOutForDeliveryAt())
+                .deliveredAt(order.getDeliveredAt())
+                .cancelledAt(order.getCancelledAt())
+                .build();
     }
 }

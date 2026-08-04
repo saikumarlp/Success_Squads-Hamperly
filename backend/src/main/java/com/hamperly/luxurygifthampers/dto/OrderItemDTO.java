@@ -9,20 +9,23 @@ public class OrderItemDTO {
     private BigDecimal pricePerUnit;
     private BigDecimal totalPrice;
     private String imageUrl;
+    private String brand = "Hamperly";
+    private String category;
 
     public OrderItemDTO() {
     }
 
-    public OrderItemDTO(Long productId, String productName, Integer quantity, BigDecimal pricePerUnit, BigDecimal totalPrice, String imageUrl) {
+    public OrderItemDTO(Long productId, String productName, Integer quantity, BigDecimal pricePerUnit, BigDecimal totalPrice, String imageUrl, String brand, String category) {
         this.productId = productId;
         this.productName = productName;
         this.quantity = quantity;
         this.pricePerUnit = pricePerUnit;
         this.totalPrice = totalPrice;
         this.imageUrl = imageUrl;
+        this.brand = brand != null ? brand : "Hamperly";
+        this.category = category;
     }
 
-    // Getters and Setters
     public Long getProductId() {
         return productId;
     }
@@ -71,6 +74,22 @@ public class OrderItemDTO {
         this.imageUrl = imageUrl;
     }
 
+    public String getBrand() {
+        return brand;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
     public static OrderItemDTOBuilder builder() {
         return new OrderItemDTOBuilder();
     }
@@ -82,39 +101,20 @@ public class OrderItemDTO {
         private BigDecimal pricePerUnit;
         private BigDecimal totalPrice;
         private String imageUrl;
+        private String brand = "Hamperly";
+        private String category;
 
-        public OrderItemDTOBuilder productId(Long productId) {
-            this.productId = productId;
-            return this;
-        }
-
-        public OrderItemDTOBuilder productName(String productName) {
-            this.productName = productName;
-            return this;
-        }
-
-        public OrderItemDTOBuilder quantity(Integer quantity) {
-            this.quantity = quantity;
-            return this;
-        }
-
-        public OrderItemDTOBuilder pricePerUnit(BigDecimal pricePerUnit) {
-            this.pricePerUnit = pricePerUnit;
-            return this;
-        }
-
-        public OrderItemDTOBuilder totalPrice(BigDecimal totalPrice) {
-            this.totalPrice = totalPrice;
-            return this;
-        }
-
-        public OrderItemDTOBuilder imageUrl(String imageUrl) {
-            this.imageUrl = imageUrl;
-            return this;
-        }
+        public OrderItemDTOBuilder productId(Long productId) { this.productId = productId; return this; }
+        public OrderItemDTOBuilder productName(String productName) { this.productName = productName; return this; }
+        public OrderItemDTOBuilder quantity(Integer quantity) { this.quantity = quantity; return this; }
+        public OrderItemDTOBuilder pricePerUnit(BigDecimal pricePerUnit) { this.pricePerUnit = pricePerUnit; return this; }
+        public OrderItemDTOBuilder totalPrice(BigDecimal totalPrice) { this.totalPrice = totalPrice; return this; }
+        public OrderItemDTOBuilder imageUrl(String imageUrl) { this.imageUrl = imageUrl; return this; }
+        public OrderItemDTOBuilder brand(String brand) { this.brand = brand; return this; }
+        public OrderItemDTOBuilder category(String category) { this.category = category; return this; }
 
         public OrderItemDTO build() {
-            return new OrderItemDTO(productId, productName, quantity, pricePerUnit, totalPrice, imageUrl);
+            return new OrderItemDTO(productId, productName, quantity, pricePerUnit, totalPrice, imageUrl, brand, category);
         }
     }
 }

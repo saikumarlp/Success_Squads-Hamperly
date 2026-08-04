@@ -4,6 +4,6 @@ import com.hamperly.luxurygifthampers.dto.admin.AdminOrderResponse;
 import java.util.List;
 
 public interface AdminOrderService {
-    List<AdminOrderResponse> getAllOrders();
+    List<AdminOrderResponse> getOrders(String search, String status);
     void updateOrderStatus(String orderId, String status);
 }

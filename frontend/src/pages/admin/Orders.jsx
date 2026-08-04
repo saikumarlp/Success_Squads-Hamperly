@@ -8,15 +8,19 @@ const Orders = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [toast, setToast] = useState(null);
 
+  // Filter States
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
   const triggerToast = (type, message) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 4000);
   };
 
-  const loadOrders = async () => {
+  const loadOrders = async (searchVal = search, statusVal = statusFilter) => {
     try {
       setLoading(true);
-      const data = await getAdminOrders();
+      const data = await getAdminOrders(searchVal, statusVal);
       setOrders(data || []);
       setLoading(false);
     } catch (err) {
@@ -27,20 +31,50 @@ const Orders = () => {
   };
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    loadOrders(search, statusFilter);
+  }, [statusFilter]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    loadOrders(search, statusFilter);
+  };
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setStatusFilter('');
+    loadOrders('', '');
+  };
 
   const handleStatusChange = async (orderId, nextStatus) => {
     try {
       await updateAdminOrderStatus(orderId, nextStatus);
       triggerToast('success', `Order status updated to ${nextStatus}.`);
-      loadOrders();
+      loadOrders(search, statusFilter);
       if (selectedOrder && selectedOrder.orderId === orderId) {
         setSelectedOrder(prev => ({ ...prev, status: nextStatus }));
       }
     } catch (err) {
       console.error(err);
       triggerToast('danger', 'Failed to update order status.');
+    }
+  };
+
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case 'SUCCESS':
+      case 'CONFIRMED':
+      case 'DELIVERED':
+        return 'bg-success-subtle border border-success text-success';
+      case 'PENDING':
+      case 'PACKED':
+      case 'SHIPPED':
+      case 'OUT_FOR_DELIVERY':
+        return 'bg-warning-subtle border border-warning text-warning';
+      case 'FAILED':
+      case 'CANCELLED':
+        return 'bg-danger-subtle border border-danger text-danger';
+      default:
+        return 'bg-secondary-subtle border border-secondary text-secondary';
     }
   };
 
@@ -59,9 +93,51 @@ const Orders = () => {
       )}
 
       {/* Header */}
-      <div className="mb-4">
+      <div className="mb-4 text-start">
         <h2 className="m-0 fw-bold tracking-wide" style={{ color: '#f8fafc' }}>Orders Registry</h2>
         <p className="text-secondary small m-0 mt-1">Monitor buyer transactions, evaluate payments, and fulfill shipment states.</p>
+      </div>
+
+      {/* Filters & Search Controls */}
+      <div className="card border-0 mb-4 p-3" style={{ borderRadius: '12px', backgroundColor: '#111827', border: '1px solid #1f2937' }}>
+        <form onSubmit={handleSearchSubmit} className="row g-3 align-items-center">
+          <div className="col-md-5">
+            <input 
+              type="text" 
+              className="form-control"
+              placeholder="Search by ID or customer details..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ backgroundColor: '#1f2937', borderColor: '#374151', color: '#f8fafc' }}
+            />
+          </div>
+          <div className="col-md-3">
+            <select
+              className="form-select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{ backgroundColor: '#1f2937', borderColor: '#374151', color: '#f8fafc' }}
+            >
+              <option value="">All Statuses</option>
+              <option value="PENDING">PENDING</option>
+              <option value="CONFIRMED">CONFIRMED</option>
+              <option value="PACKED">PACKED</option>
+              <option value="SHIPPED">SHIPPED</option>
+              <option value="OUT_FOR_DELIVERY">OUT FOR DELIVERY</option>
+              <option value="DELIVERED">DELIVERED</option>
+              <option value="CANCELLED">CANCELLED</option>
+              <option value="FAILED">FAILED</option>
+            </select>
+          </div>
+          <div className="col-md-4 d-flex gap-2">
+            <button type="submit" className="btn btn-warning fw-semibold px-4 flex-grow-1 text-dark" style={{ backgroundColor: '#fbbf24' }}>
+              Search
+            </button>
+            <button type="button" onClick={handleClearFilters} className="btn btn-outline-secondary px-3" style={{ borderColor: '#374151', color: '#94a3b8' }}>
+              Clear
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Orders list card */}
@@ -90,23 +166,19 @@ const Orders = () => {
               ) : orders.length > 0 ? (
                 orders.map((o) => (
                   <tr key={o.orderId} style={{ borderBottom: '1px solid #1f2937' }}>
-                    <td className="py-3 px-4 border-0 bg-transparent font-monospace text-warning" style={{ fontSize: '0.85rem' }}>{o.orderId}</td>
-                    <td className="py-3 border-0 bg-transparent">
+                    <td className="py-3 px-4 border-0 bg-transparent font-monospace text-warning text-start" style={{ fontSize: '0.85rem' }}>{o.orderId}</td>
+                    <td className="py-3 border-0 bg-transparent text-start">
                       <div>
                         <span className="d-block fw-semibold text-white">{o.customerName}</span>
                         <small className="text-secondary" style={{ fontSize: '0.75rem' }}>{o.customerEmail}</small>
                       </div>
                     </td>
-                    <td className="py-3 border-0 bg-transparent fw-semibold text-white">₹{o.totalAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    <td className="py-3 border-0 bg-transparent text-secondary small">
-                      {o.createdAt ? new Date(o.createdAt).toLocaleString() : 'N/A'}
+                    <td className="py-3 border-0 bg-transparent fw-semibold text-white text-start">₹{o.totalAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td className="py-3 border-0 bg-transparent text-secondary small text-start">
+                      {o.createdAt ? new Date(o.createdAt).toLocaleString('en-IN') : 'N/A'}
                     </td>
-                    <td className="py-3 border-0 bg-transparent">
-                      <span className={`badge px-2.5 py-1.5 rounded-pill fs-9 text-uppercase font-bold ${
-                        o.status === 'SUCCESS' ? 'bg-success-subtle border border-success text-success' :
-                        o.status === 'PENDING' ? 'bg-warning-subtle border border-warning text-warning' :
-                        'bg-danger-subtle border border-danger text-danger'
-                      }`}>
+                    <td className="py-3 border-0 bg-transparent text-start">
+                      <span className={`badge px-2.5 py-1.5 rounded-pill fs-9 text-uppercase font-bold ${getStatusBadgeClass(o.status)}`}>
                         {o.status}
                       </span>
                     </td>
@@ -116,10 +188,15 @@ const Orders = () => {
                           className="form-select form-select-sm admin-input-status"
                           value={o.status}
                           onChange={(e) => handleStatusChange(o.orderId, e.target.value)}
-                          style={{ width: '120px', fontSize: '0.8rem', backgroundColor: '#0f172a', borderColor: '#1f2937', color: '#f8fafc' }}
+                          style={{ width: '150px', fontSize: '0.8rem', backgroundColor: '#0f172a', borderColor: '#1f2937', color: '#f8fafc' }}
                         >
                           <option value="PENDING">PENDING</option>
-                          <option value="SUCCESS">SUCCESS</option>
+                          <option value="CONFIRMED">CONFIRMED</option>
+                          <option value="PACKED">PACKED</option>
+                          <option value="SHIPPED">SHIPPED</option>
+                          <option value="OUT_FOR_DELIVERY">OUT FOR DELIVERY</option>
+                          <option value="DELIVERED">DELIVERED</option>
+                          <option value="CANCELLED">CANCELLED</option>
                           <option value="FAILED">FAILED</option>
                         </select>
                         <button 
@@ -154,17 +231,30 @@ const Orders = () => {
         <div className="modal show d-block" tabIndex="-1" style={{ zIndex: 1050, backgroundColor: 'rgba(0,0,0,0.6)' }}>
           <div className="modal-dialog modal-dialog-centered modal-lg">
             <div className="modal-content text-light border-0" style={{ backgroundColor: '#111827', borderRadius: '16px', border: '1px solid #1f2937' }}>
-              <div className="modal-header border-bottom" style={{ borderColor: '#1f2937' }}>
-                <h5 className="modal-title fw-bold" style={{ color: '#fbbf24' }}>Order Items: {selectedOrder.orderId}</h5>
+              <div className="modal-header border-bottom text-start" style={{ borderColor: '#1f2937' }}>
+                <h5 className="modal-title fw-bold" style={{ color: '#fbbf24' }}>Order Details: {selectedOrder.orderId}</h5>
                 <button type="button" className="btn-close btn-close-white" onClick={() => setIsDetailsOpen(false)}></button>
               </div>
-              <div className="modal-body p-4">
-                <div className="mb-4">
-                  <span className="text-secondary small text-uppercase font-semibold tracking-wider block">Buyer Details</span>
-                  <div className="mt-2 p-2.5 rounded" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div className="row small g-2">
-                      <div className="col-6"><span className="text-secondary">Name:</span> <strong className="text-white">{selectedOrder.customerName}</strong></div>
-                      <div className="col-6"><span className="text-secondary">Email:</span> <span className="text-white">{selectedOrder.customerEmail}</span></div>
+              <div className="modal-body p-4 text-start">
+                {/* Shipping & Buyer Details */}
+                <div className="row g-3 mb-4">
+                  <div className="col-md-6">
+                    <span className="text-secondary small text-uppercase font-semibold tracking-wider block">Buyer Details</span>
+                    <div className="mt-2 p-2.5 rounded h-100" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div className="small">
+                        <div className="mb-1"><span className="text-secondary">Name:</span> <strong className="text-white">{selectedOrder.customerName}</strong></div>
+                        <div className="mb-1"><span className="text-secondary">Email:</span> <span className="text-white">{selectedOrder.customerEmail}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <span className="text-secondary small text-uppercase font-semibold tracking-wider block">Shipping Destination</span>
+                    <div className="mt-2 p-2.5 rounded h-100" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div className="small">
+                        <div className="mb-1"><span className="text-secondary">Address:</span> <span className="text-white">{selectedOrder.shippingAddress || 'N/A'}</span></div>
+                        <div className="mb-1"><span className="text-secondary">Location:</span> <span className="text-white">{selectedOrder.city ? `${selectedOrder.city}, ${selectedOrder.state}` : 'N/A'}</span></div>
+                        <div className="mb-1"><span className="text-secondary">PIN:</span> <span className="text-white">{selectedOrder.postalCode || 'N/A'}</span></div>
+                      </div>
                     </div>
                   </div>
                 </div>

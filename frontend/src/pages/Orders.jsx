@@ -62,10 +62,16 @@ const Orders = () => {
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case 'SUCCESS':
+      case 'CONFIRMED':
+      case 'DELIVERED':
         return 'bg-success-subtle text-success border border-success px-3.5 py-1 rounded-pill small fw-bold';
       case 'PENDING':
+      case 'PACKED':
+      case 'SHIPPED':
+      case 'OUT_FOR_DELIVERY':
         return 'bg-warning-subtle text-warning border border-warning px-3.5 py-1 rounded-pill small fw-bold';
       case 'FAILED':
+      case 'CANCELLED':
         return 'bg-danger-subtle text-danger border border-danger px-3.5 py-1 rounded-pill small fw-bold';
       default:
         return 'bg-secondary-subtle text-secondary border border-secondary px-3.5 py-1 rounded-pill small fw-bold';
@@ -166,6 +172,15 @@ const Orders = () => {
                     <span className={getStatusBadgeClass(order.status)}>
                       {order.status}
                     </span>
+                  </div>
+                  <div>
+                    <button
+                      onClick={() => navigate(`/orders/${order.orderId}`)}
+                      className="btn btn-gold btn-sm px-3 text-white text-uppercase fw-semibold"
+                      style={{ backgroundColor: '#D4AF37', borderColor: '#D4AF37', borderRadius: '0', fontSize: '0.75rem', letterSpacing: '0.5px' }}
+                    >
+                      View Details
+                    </button>
                   </div>
                 </div>
               </div>

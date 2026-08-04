@@ -28,10 +28,81 @@ const Navbar = () => {
   const [cartItems, setCartItems] = useState([]);
   const [cartLoading, setCartLoading] = useState(false);
 
+  // Address Form States
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [stateVal, setStateVal] = useState('');
+  const [country, setCountry] = useState('India');
+  const [postalCode, setPostalCode] = useState('');
+
+  // Notifications States
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+
   // Local notifications list
   const [toasts, setToasts] = useState([]);
 
+  const fetchNotifications = async () => {
+    if (!user) return;
+    try {
+      const res = await api.get('/notifications');
+      const data = res.data || [];
+      setNotifications(data);
+      const countRes = await api.get('/notifications/unread-count');
+      const newCount = countRes.data.unreadCount || 0;
+      
+      if (newCount > unreadNotificationsCount) {
+        // Find newest unread notification
+        const unread = data.filter(n => !n.read);
+        if (unread.length > 0) {
+          addToast(unread[0].message);
+        }
+      }
+      setUnreadNotificationsCount(newCount);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 5000); // Poll every 5s
+      return () => clearInterval(interval);
+    }
+  }, [user, unreadNotificationsCount]);
+
+  const handleNotificationClick = async (n) => {
+    try {
+      await api.patch(`/notifications/${n.id}/read`);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+    setShowNotificationsDropdown(false);
+    navigate('/orders');
+  };
+
+  const handleMarkAllNotificationsAsRead = async () => {
+    try {
+      const unread = notifications.filter(n => !n.read);
+      for (const n of unread) {
+        await api.patch(`/notifications/${n.id}/read`);
+      }
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleCheckout = async () => {
+    if (!shippingAddress.trim() || !city.trim() || !stateVal.trim() || !postalCode.trim()) {
+      addToast("Please fill in all shipping details.");
+      return;
+    }
+
     const loadScript = () => {
       return new Promise((resolve) => {
         if (window.Razorpay) {
@@ -55,7 +126,14 @@ const Navbar = () => {
 
     setCartLoading(true);
     try {
-      const orderResponse = await api.post('/orders/create');
+      const payload = {
+        shippingAddress: shippingAddress.trim(),
+        city: city.trim(),
+        state: stateVal.trim(),
+        country: country.trim(),
+        postalCode: postalCode.trim()
+      };
+      const orderResponse = await api.post('/orders/create', payload);
       const { orderId, amount, currency, keyId } = orderResponse.data;
 
       const options = {
@@ -79,6 +157,11 @@ const Navbar = () => {
               setCartItems([]);
               await fetchCartCount();
               setShowCartDrawer(false);
+              setShowAddressForm(false);
+              setShippingAddress('');
+              setCity('');
+              setStateVal('');
+              setPostalCode('');
               navigate('/orders');
             } else {
               addToast("Payment verification failed. Please contact support.");
@@ -248,6 +331,48 @@ const Navbar = () => {
         <div className="d-flex align-items-center gap-1 gap-sm-2 order-lg-3">
           {user && (
             <>
+              {/* Notifications Icon */}
+              <div className="position-relative d-inline-block">
+                <button 
+                  type="button" 
+                  className="btn btn-link text-dark p-2 position-relative border-0 navbar-icon-btn" 
+                  onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+                  title="Notifications"
+                >
+                  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  {unreadNotificationsCount > 0 && (
+                    <span className="position-absolute translate-middle badge rounded-pill badge-gold" style={{ top: '6px', right: '-1px', fontSize: '0.58rem', padding: '3px 5px' }}>
+                      {unreadNotificationsCount}
+                    </span>
+                  )}
+                </button>
+
+                {showNotificationsDropdown && (
+                  <div className="navbar-notifications-dropdown shadow-lg position-absolute bg-white border p-3 rounded" style={{ top: '45px', right: 0, width: '320px', zIndex: 1100 }}>
+                    <div className="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
+                      <h6 className="m-0 fw-bold">Notifications</h6>
+                      {unreadNotificationsCount > 0 && (
+                        <button className="btn btn-link p-0 small text-decoration-none text-muted" onClick={handleMarkAllNotificationsAsRead} style={{ fontSize: '0.75rem' }}>Mark all read</button>
+                      )}
+                    </div>
+                    <div className="notifications-list" style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                      {notifications.length === 0 ? (
+                        <div className="text-center text-muted py-3 small">No notifications</div>
+                      ) : (
+                        notifications.map((n) => (
+                          <div key={n.id} className={`p-2 border-bottom small d-flex flex-column gap-1 ${n.read ? 'text-muted' : 'bg-light fw-semibold text-dark'}`} style={{ cursor: 'pointer' }} onClick={() => handleNotificationClick(n)}>
+                            <div>{n.message}</div>
+                            <div className="text-muted" style={{ fontSize: '0.68rem' }}>{new Date(n.createdAt).toLocaleDateString()}</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Wishlist Icon */}
               <button 
                 type="button" 
@@ -551,7 +676,69 @@ const Navbar = () => {
               ></button>
             </div>
             <div className="cart-drawer-body">
-              {cartLoading ? (
+              {showAddressForm ? (
+                <div className="p-3 text-start">
+                  <div className="d-flex align-items-center justify-content-between mb-3">
+                    <h6 className="fw-bold m-0 text-uppercase tracking-wider" style={{ fontSize: '0.8rem', color: '#D4AF37' }}>Shipping Address</h6>
+                    <button type="button" className="btn btn-link p-0 text-decoration-none small text-dark fw-bold" onClick={() => setShowAddressForm(false)} style={{ fontSize: '0.75rem' }}>← Back to Cart</button>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label small text-muted text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>Full Address</label>
+                    <textarea 
+                      className="form-control form-control-sm rounded-0"
+                      rows="3"
+                      placeholder="Street address, apartment, suite..."
+                      value={shippingAddress}
+                      onChange={(e) => setShippingAddress(e.target.value)}
+                    ></textarea>
+                  </div>
+                  <div className="row g-2 mb-3">
+                    <div className="col-6">
+                      <label className="form-label small text-muted text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>City</label>
+                      <input 
+                        type="text" 
+                        className="form-control form-control-sm rounded-0"
+                        placeholder="City"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small text-muted text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>State</label>
+                      <input 
+                        type="text" 
+                        className="form-control form-control-sm rounded-0"
+                        placeholder="State"
+                        value={stateVal}
+                        onChange={(e) => setStateVal(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="row g-2 mb-3">
+                    <div className="col-6">
+                      <label className="form-label small text-muted text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>Postal Code</label>
+                      <input 
+                        type="text" 
+                        className="form-control form-control-sm rounded-0"
+                        placeholder="PIN Code"
+                        value={postalCode}
+                        onChange={(e) => setPostalCode(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small text-muted text-uppercase fw-semibold" style={{ fontSize: '0.7rem' }}>Country</label>
+                      <input 
+                        type="text" 
+                        className="form-control form-control-sm rounded-0"
+                        placeholder="Country"
+                        value={country}
+                        onChange={(e) => setCountry(e.target.value)}
+                        disabled
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : cartLoading ? (
                 <div className="d-flex justify-content-center align-items-center h-100">
                   <div className="spinner-border text-gold" role="status" style={{ color: '#D4AF37' }}>
                     <span className="visually-hidden">Loading cart items...</span>
@@ -577,7 +764,6 @@ const Navbar = () => {
                         {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(item.price)}
                       </div>
                       <div className="d-flex align-items-center justify-content-between mt-2">
-                        {/* Quantity controls */}
                         <div className="d-flex align-items-center border" style={{ borderColor: 'rgba(0,0,0,0.15)' }}>
                           <button
                             type="button"
@@ -601,8 +787,6 @@ const Navbar = () => {
                             +
                           </button>
                         </div>
-
-                        {/* Remove item button */}
                         <button
                           type="button"
                           className="btn btn-sm text-uppercase p-0 border-0"
@@ -633,14 +817,26 @@ const Navbar = () => {
                     }).format(cartItems.reduce((sum, item) => sum + (item.subTotal || 0), 0))}
                   </span>
                 </div>
-                <button 
-                  type="button" 
-                  className="btn btn-gold w-100 py-3 text-white text-uppercase fw-bold"
-                  style={{ backgroundColor: '#D4AF37', borderColor: '#D4AF37', borderRadius: '0', letterSpacing: '1.5px', fontSize: '0.8rem' }}
-                  onClick={handleCheckout}
-                >
-                  Proceed to Checkout
-                </button>
+                {showAddressForm ? (
+                  <button 
+                    type="button" 
+                    className="btn btn-gold w-100 py-3 text-white text-uppercase fw-bold"
+                    style={{ backgroundColor: '#D4AF37', borderColor: '#D4AF37', borderRadius: '0', letterSpacing: '1.5px', fontSize: '0.8rem' }}
+                    onClick={handleCheckout}
+                    disabled={cartLoading}
+                  >
+                    {cartLoading ? 'Processing...' : 'Proceed to Payment'}
+                  </button>
+                ) : (
+                  <button 
+                    type="button" 
+                    className="btn btn-gold w-100 py-3 text-white text-uppercase fw-bold"
+                    style={{ backgroundColor: '#D4AF37', borderColor: '#D4AF37', borderRadius: '0', letterSpacing: '1.5px', fontSize: '0.8rem' }}
+                    onClick={() => setShowAddressForm(true)}
+                  >
+                    Proceed to Checkout
+                  </button>
+                )}
               </div>
             )}
           </div>
