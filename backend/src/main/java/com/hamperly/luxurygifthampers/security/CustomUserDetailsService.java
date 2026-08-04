@@ -27,9 +27,15 @@ public class CustomUserDetailsService implements UserDetailsService {
                 ? roleName.toUpperCase() 
                 : "ROLE_" + roleName.toUpperCase();
 
+        boolean enabled = user.getBlocked() == null || !user.getBlocked();
+
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
+                enabled,
+                true,
+                true,
+                true,
                 Collections.singletonList(new SimpleGrantedAuthority(authority))
         );
     }
