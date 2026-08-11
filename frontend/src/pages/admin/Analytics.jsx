@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getAdminAnalyticsDaily, getAdminAnalyticsMonthly, getAdminAnalyticsYearly, getAdminAnalyticsOverall } from '../../services/admin/analyticsService';
+import { 
+  getAdminAnalyticsDaily, 
+  getAdminAnalyticsMonthly, 
+  getAdminAnalyticsYearly, 
+  getAdminAnalyticsOverall,
+  getAdminAnalyticsDate
+} from '../../services/admin/analyticsService';
 
 const Analytics = () => {
   const [activeTab, setActiveTab] = useState('daily'); // 'daily' | 'monthly' | 'yearly'
@@ -15,6 +21,13 @@ const Analytics = () => {
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Selected Date report states
+  const [selectedDate, setSelectedDate] = useState('');
+  const [dateStats, setDateStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState('');
+  const [reportShown, setReportShown] = useState(false);
 
   const loadAllAnalytics = async () => {
     try {
@@ -35,6 +48,59 @@ const Analytics = () => {
     } catch (err) {
       console.error(err);
       setError('Failed to query analytical dashboards.');
+      setLoading(false);
+    }
+  };
+
+  const handleShowReport = async (e) => {
+    e.preventDefault();
+    if (!selectedDate) return;
+    
+    try {
+      setStatsLoading(true);
+      setStatsError('');
+      setReportShown(true);
+
+      const statsData = await getAdminAnalyticsDate(selectedDate);
+      setDateStats(statsData);
+      
+      const dData = await getAdminAnalyticsDaily(selectedDate);
+      setDailyData(dData);
+
+      const mData = await getAdminAnalyticsMonthly(selectedDate);
+      setMonthlyData(mData);
+
+      const yData = await getAdminAnalyticsYearly(selectedDate);
+      setYearlyData(yData);
+      
+      setStatsLoading(false);
+    } catch (err) {
+      console.error(err);
+      setStatsError('Failed to fetch report for the selected date.');
+      setStatsLoading(false);
+    }
+  };
+
+  const handleClearDateFilter = async () => {
+    setSelectedDate('');
+    setDateStats(null);
+    setReportShown(false);
+    setStatsError('');
+    
+    try {
+      setLoading(true);
+      const dData = await getAdminAnalyticsDaily();
+      setDailyData(dData);
+
+      const mData = await getAdminAnalyticsMonthly();
+      setMonthlyData(mData);
+
+      const yData = await getAdminAnalyticsYearly();
+      setYearlyData(yData);
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to reload analytics.');
       setLoading(false);
     }
   };
@@ -154,25 +220,129 @@ const Analytics = () => {
       )}
 
       {/* Mini overview banner */}
-      <div className="row g-3 mb-4">
-        <div className="col-12 col-md-4">
+      <div className="row g-3 mb-4 text-start">
+        <div className={reportShown ? "col-12 col-md-3" : "col-12 col-md-4"}>
           <div className="p-3 rounded text-center" style={{ backgroundColor: '#111827', border: '1px solid #1f2937' }}>
             <span className="text-secondary small text-uppercase font-semibold">Total Net Sales</span>
             <h4 className="fw-bold mt-2 text-white">₹{stats?.totalRevenue?.toLocaleString('en-IN') || '0'}</h4>
           </div>
         </div>
-        <div className="col-12 col-md-4">
+        <div className={reportShown ? "col-12 col-md-3" : "col-12 col-md-4"}>
           <div className="p-3 rounded text-center" style={{ backgroundColor: '#111827', border: '1px solid #1f2937' }}>
-            <span className="text-secondary small text-uppercase font-semibold">Today's Inflow</span>
+            <span className="text-secondary small text-uppercase font-semibold">Today's Revenue</span>
             <h4 className="fw-bold mt-2 text-white">₹{stats?.todayRevenue?.toLocaleString('en-IN') || '0'}</h4>
           </div>
         </div>
-        <div className="col-12 col-md-4">
+        <div className={reportShown ? "col-12 col-md-3" : "col-12 col-md-4"}>
           <div className="p-3 rounded text-center" style={{ backgroundColor: '#111827', border: '1px solid #1f2937' }}>
             <span className="text-secondary small text-uppercase font-semibold">Current Month Sales</span>
             <h4 className="fw-bold mt-2 text-white">₹{stats?.monthlyRevenue?.toLocaleString('en-IN') || '0'}</h4>
           </div>
         </div>
+        {reportShown && dateStats && (
+          <div className="col-12 col-md-3">
+            <div className="p-3 rounded text-center border border-warning" style={{ backgroundColor: '#111827' }}>
+              <span className="text-warning small text-uppercase font-semibold">Selected Date Revenue</span>
+              <h4 className="fw-bold mt-2 text-warning">₹{dateStats.revenue?.toLocaleString('en-IN') || '0'}</h4>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* Professional Date Filter Section */}
+      <div className="card border-0 p-4 mb-4 shadow-sm" style={{ borderRadius: '16px', backgroundColor: '#111827', border: '1px solid #1f2937' }}>
+        <form onSubmit={handleShowReport} className="row g-3 align-items-center justify-content-between text-start">
+          <div className="col-auto">
+            <h5 className="text-white fw-bold mb-0 font-sans tracking-wide">
+              <svg className="w-5 h-5 text-warning me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ verticalAlign: 'middle', width: '1.25rem', height: '1.25rem' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Select Report Date
+            </h5>
+          </div>
+          <div className="col-auto d-flex align-items-center gap-3 flex-wrap">
+            <div className="position-relative">
+              <input 
+                type="date" 
+                className="form-control admin-input py-2 px-3 ps-5 text-white" 
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                style={{ width: '220px', borderRadius: '10px' }}
+                required
+              />
+              <span className="position-absolute" style={{ left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
+                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style={{ width: '1.125rem', height: '1.125rem' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </span>
+            </div>
+            <button type="submit" className="btn btn-warning border-0 text-dark fw-bold px-4 py-2" style={{ backgroundColor: '#fbbf24', borderRadius: '10px' }} disabled={statsLoading}>
+              {statsLoading ? (
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              ) : null}
+              Show Report
+            </button>
+            {reportShown && (
+              <button type="button" onClick={handleClearDateFilter} className="btn btn-outline-secondary text-light px-3 py-2 border-0" style={{ borderRadius: '10px' }}>
+                Clear Filter
+              </button>
+            )}
+          </div>
+        </form>
+
+        {/* Selected Date Report Output */}
+        {statsLoading && (
+          <div className="text-center py-4">
+            <div className="spinner-border text-warning" role="status">
+              <span className="visually-hidden">Loading report...</span>
+            </div>
+          </div>
+        )}
+
+        {statsError && (
+          <div className="alert alert-danger border-0 mt-3" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#f87171' }}>
+            {statsError}
+          </div>
+        )}
+
+        {!statsLoading && reportShown && dateStats && (
+          <div className="mt-4 pt-3 border-top" style={{ borderColor: '#1f2937' }}>
+            {dateStats.ordersCount === 0 ? (
+              <div className="alert alert-warning border-0 m-0 text-center fw-semibold text-warning" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderRadius: '10px' }}>
+                No sales found for the selected date.
+              </div>
+            ) : (
+              <div>
+                <h6 className="text-secondary small text-uppercase font-semibold tracking-wider mb-3 text-start">Performance Metrics for {new Date(selectedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</h6>
+                <div className="row g-3">
+                  <div className="col-6 col-md-3">
+                    <div className="p-3 rounded text-center" style={{ backgroundColor: 'rgba(251, 191, 36, 0.03)', border: '1px solid rgba(251, 191, 36, 0.1)' }}>
+                      <span className="text-secondary small text-uppercase font-semibold">Revenue</span>
+                      <h4 className="fw-bold mt-2 text-warning">₹{dateStats.revenue?.toLocaleString('en-IN') || '0'}</h4>
+                    </div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <div className="p-3 rounded text-center" style={{ backgroundColor: 'rgba(56, 189, 248, 0.03)', border: '1px solid rgba(56, 189, 248, 0.1)' }}>
+                      <span className="text-secondary small text-uppercase font-semibold">Orders</span>
+                      <h4 className="fw-bold mt-2 text-info">{dateStats.ordersCount}</h4>
+                    </div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <div className="p-3 rounded text-center" style={{ backgroundColor: 'rgba(34, 197, 94, 0.03)', border: '1px solid rgba(34, 197, 94, 0.1)' }}>
+                      <span className="text-secondary small text-uppercase font-semibold">Avg Order Value</span>
+                      <h4 className="fw-bold mt-2 text-success">₹{dateStats.averageOrderValue?.toLocaleString('en-IN', { maximumFractionDigits: 0 }) || '0'}</h4>
+                    </div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <div className="p-3 rounded text-center" style={{ backgroundColor: 'rgba(168, 85, 247, 0.03)', border: '1px solid rgba(168, 85, 247, 0.1)' }}>
+                      <span className="text-secondary small text-uppercase font-semibold">Products Sold</span>
+                      <h4 className="fw-bold mt-2" style={{ color: '#a855f7' }}>{dateStats.productsSold} units</h4>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Date Filters and Tabs Panel */}

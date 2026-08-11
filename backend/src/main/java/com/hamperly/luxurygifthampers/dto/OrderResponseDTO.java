@@ -35,6 +35,8 @@ public class OrderResponseDTO {
     private String paymentStatus;
 
     private LocalDateTime estimatedDelivery;
+    private LocalDateTime orderDate;
+    private LocalDateTime expectedDeliveryDate;
     private String trackingNumber;
 
     private LocalDateTime confirmedAt;
@@ -53,6 +55,7 @@ public class OrderResponseDTO {
                             String shippingAddress, String city, String state, String country, String postalCode,
                             String customerName, String customerEmail, String customerPhone, String paymentId,
                             String paymentMethod, String paymentStatus, LocalDateTime estimatedDelivery,
+                            LocalDateTime orderDate, LocalDateTime expectedDeliveryDate,
                             String trackingNumber, LocalDateTime confirmedAt, LocalDateTime packedAt,
                             LocalDateTime shippedAt, LocalDateTime outForDeliveryAt, LocalDateTime deliveredAt,
                             LocalDateTime cancelledAt) {
@@ -79,6 +82,8 @@ public class OrderResponseDTO {
         this.paymentMethod = paymentMethod;
         this.paymentStatus = paymentStatus;
         this.estimatedDelivery = estimatedDelivery;
+        this.orderDate = orderDate;
+        this.expectedDeliveryDate = expectedDeliveryDate;
         this.trackingNumber = trackingNumber;
         this.confirmedAt = confirmedAt;
         this.packedAt = packedAt;
@@ -158,6 +163,12 @@ public class OrderResponseDTO {
     public LocalDateTime getEstimatedDelivery() { return estimatedDelivery; }
     public void setEstimatedDelivery(LocalDateTime estimatedDelivery) { this.estimatedDelivery = estimatedDelivery; }
 
+    public LocalDateTime getOrderDate() { return orderDate; }
+    public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
+
+    public LocalDateTime getExpectedDeliveryDate() { return expectedDeliveryDate; }
+    public void setExpectedDeliveryDate(LocalDateTime expectedDeliveryDate) { this.expectedDeliveryDate = expectedDeliveryDate; }
+
     public String getTrackingNumber() { return trackingNumber; }
     public void setTrackingNumber(String trackingNumber) { this.trackingNumber = trackingNumber; }
 
@@ -207,6 +218,8 @@ public class OrderResponseDTO {
         private String paymentMethod;
         private String paymentStatus;
         private LocalDateTime estimatedDelivery;
+        private LocalDateTime orderDate;
+        private LocalDateTime expectedDeliveryDate;
         private String trackingNumber;
         private LocalDateTime confirmedAt;
         private LocalDateTime packedAt;
@@ -238,6 +251,8 @@ public class OrderResponseDTO {
         public OrderResponseDTOBuilder paymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; return this; }
         public OrderResponseDTOBuilder paymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; return this; }
         public OrderResponseDTOBuilder estimatedDelivery(LocalDateTime estimatedDelivery) { this.estimatedDelivery = estimatedDelivery; return this; }
+        public OrderResponseDTOBuilder orderDate(LocalDateTime orderDate) { this.orderDate = orderDate; return this; }
+        public OrderResponseDTOBuilder expectedDeliveryDate(LocalDateTime expectedDeliveryDate) { this.expectedDeliveryDate = expectedDeliveryDate; return this; }
         public OrderResponseDTOBuilder trackingNumber(String trackingNumber) { this.trackingNumber = trackingNumber; return this; }
         public OrderResponseDTOBuilder confirmedAt(LocalDateTime confirmedAt) { this.confirmedAt = confirmedAt; return this; }
         public OrderResponseDTOBuilder packedAt(LocalDateTime packedAt) { this.packedAt = packedAt; return this; }
@@ -250,6 +265,7 @@ public class OrderResponseDTO {
             return new OrderResponseDTO(orderId, totalAmount, status, createdAt, orderItems, itemTotal, discount,
                     couponDiscount, shippingCharge, tax, grandTotal, shippingAddress, city, state, country, postalCode,
                     customerName, customerEmail, customerPhone, paymentId, paymentMethod, paymentStatus, estimatedDelivery,
+                    orderDate, expectedDeliveryDate,
                     trackingNumber, confirmedAt, packedAt, shippedAt, outForDeliveryAt, deliveredAt, cancelledAt);
         }
     }

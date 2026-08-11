@@ -70,6 +70,12 @@ public class Order {
     @Column(name = "estimated_delivery")
     private LocalDateTime estimatedDelivery;
 
+    @Column(name = "order_date")
+    private LocalDateTime orderDate;
+
+    @Column(name = "expected_delivery_date")
+    private LocalDateTime expectedDeliveryDate;
+
     @Column(name = "tracking_number", length = 255)
     private String trackingNumber;
 
@@ -110,7 +116,8 @@ public class Order {
                  LocalDateTime estimatedDelivery, String trackingNumber, LocalDateTime confirmedAt,
                  LocalDateTime packedAt, LocalDateTime shippedAt, LocalDateTime outForDeliveryAt,
                  LocalDateTime deliveredAt, LocalDateTime cancelledAt, LocalDateTime createdAt,
-                 LocalDateTime updatedAt, List<OrderItem> orderItems) {
+                 LocalDateTime updatedAt, List<OrderItem> orderItems, LocalDateTime orderDate,
+                 LocalDateTime expectedDeliveryDate) {
         this.orderId = orderId;
         this.user = user;
         this.totalAmount = totalAmount;
@@ -140,6 +147,8 @@ public class Order {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.orderItems = orderItems != null ? orderItems : new ArrayList<>();
+        this.orderDate = orderDate;
+        this.expectedDeliveryDate = expectedDeliveryDate;
     }
 
     // Getters and Setters
@@ -199,6 +208,12 @@ public class Order {
 
     public LocalDateTime getEstimatedDelivery() { return estimatedDelivery; }
     public void setEstimatedDelivery(LocalDateTime estimatedDelivery) { this.estimatedDelivery = estimatedDelivery; }
+
+    public LocalDateTime getOrderDate() { return orderDate; }
+    public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
+
+    public LocalDateTime getExpectedDeliveryDate() { return expectedDeliveryDate; }
+    public void setExpectedDeliveryDate(LocalDateTime expectedDeliveryDate) { this.expectedDeliveryDate = expectedDeliveryDate; }
 
     public String getTrackingNumber() { return trackingNumber; }
     public void setTrackingNumber(String trackingNumber) { this.trackingNumber = trackingNumber; }
@@ -264,6 +279,8 @@ public class Order {
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private List<OrderItem> orderItems = new ArrayList<>();
+        private LocalDateTime orderDate;
+        private LocalDateTime expectedDeliveryDate;
 
         public OrderBuilder orderId(String orderId) { this.orderId = orderId; return this; }
         public OrderBuilder user(User user) { this.user = user; return this; }
@@ -294,12 +311,15 @@ public class Order {
         public OrderBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
         public OrderBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
         public OrderBuilder orderItems(List<OrderItem> orderItems) { this.orderItems = orderItems; return this; }
+        public OrderBuilder orderDate(LocalDateTime orderDate) { this.orderDate = orderDate; return this; }
+        public OrderBuilder expectedDeliveryDate(LocalDateTime expectedDeliveryDate) { this.expectedDeliveryDate = expectedDeliveryDate; return this; }
 
         public Order build() {
             return new Order(orderId, user, totalAmount, status, itemTotal, discount, couponDiscount,
                     shippingCharge, tax, grandTotal, shippingAddress, city, state, country, postalCode,
                     paymentId, paymentMethod, paymentStatus, estimatedDelivery, trackingNumber, confirmedAt,
-                    packedAt, shippedAt, outForDeliveryAt, deliveredAt, cancelledAt, createdAt, updatedAt, orderItems);
+                    packedAt, shippedAt, outForDeliveryAt, deliveredAt, cancelledAt, createdAt, updatedAt, orderItems,
+                    orderDate, expectedDeliveryDate);
         }
     }
 }

@@ -7,6 +7,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [wishlistItems, setWishlistItems] = useState([]);
 
   const fetchCartCount = async () => {
     try {
@@ -14,6 +16,16 @@ export const AuthProvider = ({ children }) => {
       setCartCount(response.data.cartCount || 0);
     } catch (error) {
       console.error("Error fetching cart count:", error);
+    }
+  };
+
+  const fetchWishlist = async () => {
+    try {
+      const response = await api.get('/wishlist');
+      setWishlistItems(response.data || []);
+      setWishlistCount(response.data.length || 0);
+    } catch (error) {
+      console.error("Error fetching wishlist:", error);
     }
   };
 
@@ -33,6 +45,8 @@ export const AuthProvider = ({ children }) => {
           // Fetch cart count
           const countRes = await api.get('/cart/count');
           setCartCount(countRes.data.cartCount || 0);
+          // Fetch wishlist
+          await fetchWishlist();
         } catch (error) {
           console.error("Token verification failed", error);
           logout();
@@ -62,6 +76,13 @@ export const AuthProvider = ({ children }) => {
         console.error("Error fetching cart count on login", e);
       }
 
+      // Fetch wishlist on login
+      try {
+        await fetchWishlist();
+      } catch (e) {
+        console.error("Error fetching wishlist on login", e);
+      }
+
       return userData;
     } catch (error) {
       throw error.response?.data || { message: "Something went wrong" };
@@ -82,6 +103,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setUser(null);
     setCartCount(0);
+    setWishlistCount(0);
+    setWishlistItems([]);
   };
 
   const addToCart = async (productId, quantity = 1) => {
@@ -138,8 +161,49 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const addToWishlist = async (productId) => {
+    try {
+      // Optimistic update
+      setWishlistItems(prev => {
+        if (prev.some(item => item.id === productId)) return prev;
+        return [...prev, { id: productId }];
+      });
+      setWishlistCount(c => c + 1);
+
+      const response = await api.post(`/wishlist/${productId}`);
+      await fetchWishlist();
+      return response.data;
+    } catch (error) {
+      await fetchWishlist();
+      throw error.response?.data || { message: "Failed to add item to wishlist" };
+    }
+  };
+
+  const removeFromWishlist = async (productId) => {
+    try {
+      // Optimistic update
+      setWishlistItems(prev => prev.filter(item => item.id !== productId));
+      setWishlistCount(c => Math.max(0, c - 1));
+
+      const response = await api.delete(`/wishlist/${productId}`);
+      await fetchWishlist();
+      return response.data;
+    } catch (error) {
+      await fetchWishlist();
+      throw error.response?.data || { message: "Failed to remove item from wishlist" };
+    }
+  };
+
+  const isInWishlist = (productId) => {
+    return wishlistItems.some(item => item.id === productId);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, forgotPassword, resetPassword, setUser, cartCount, addToCart, fetchCartCount, updateCartQty, removeFromCart }}>
+    <AuthContext.Provider value={{ 
+      user, loading, login, register, logout, forgotPassword, resetPassword, setUser, 
+      cartCount, addToCart, fetchCartCount, updateCartQty, removeFromCart,
+      wishlistCount, wishlistItems, addToWishlist, removeFromWishlist, isInWishlist, fetchWishlist
+    }}>
       {children}
     </AuthContext.Provider>
   );

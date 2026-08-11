@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import api from '../../services/api';
 import { getAdminAnalyticsOverall, getAdminAnalyticsDaily } from '../../services/admin/analyticsService';
 import { getAdminOrders } from '../../services/admin/orderService';
 import { getAdminUsers } from '../../services/admin/userService';
@@ -11,6 +12,7 @@ const Dashboard = () => {
   const [dailyRevenue, setDailyRevenue] = useState([]);
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentUsers, setRecentUsers] = useState([]);
+  const [reviewStats, setReviewStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -28,6 +30,9 @@ const Dashboard = () => {
 
       const usersData = await getAdminUsers({ page: 0, size: 5, sortBy: 'id', direction: 'DESC' });
       setRecentUsers(usersData.content || []);
+
+      const revRes = await api.get('/admin/reviews/stats');
+      setReviewStats(revRes.data);
 
       setLoading(false);
     } catch (err) {
@@ -247,6 +252,30 @@ const Dashboard = () => {
             icon={
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            }
+          />
+        </div>
+        <div className="col-12 col-sm-6 col-xl-3">
+          <DashboardCard 
+            title="Avg Product Rating" 
+            value={`${reviewStats?.averageRating ? reviewStats.averageRating.toFixed(1) : '0.0'} ★`} 
+            gradient="linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)"
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.907c.961 0 1.36 1.253.588 1.81l-3.97 2.88a1 1 0 00-.364 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.971-2.88a1 1 0 00-1.178 0l-3.97 2.88c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118l-3.97-2.88c-.773-.558-.375-1.81.588-1.81h4.907a1 1 0 00.95-.69l1.519-4.674z" />
+              </svg>
+            }
+          />
+        </div>
+        <div className="col-12 col-sm-6 col-xl-3">
+          <DashboardCard 
+            title="Total Customer Reviews" 
+            value={reviewStats?.totalReviews || 0} 
+            gradient="linear-gradient(135deg, #311005 0%, #0f172a 100%)"
+            icon={
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             }
           />

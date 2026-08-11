@@ -148,3 +148,4 @@ logs/
 *.log
 *.pem
 *.key
+backend/uploads/

@@ -25,6 +25,9 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private ProductImageRepository productImageRepository;
 
+    @Autowired
+    private com.hamperly.luxurygifthampers.repository.ReviewRepository reviewRepository;
+
     @Override
     public List<Category> getAllCategories() {
         return categoryRepository.findAll();
@@ -56,6 +59,9 @@ public class ProductServiceImpl implements ProductService {
                 .map(ProductImage::getImageUrl)
                 .orElse("");
 
+        Double avgRating = reviewRepository.getAverageRatingByProductId(product.getId());
+        long count = reviewRepository.countByProductIdAndIsHiddenFalse(product.getId());
+
         return ProductDTO.builder()
                 .id(product.getId())
                 .name(product.getName())
@@ -65,6 +71,8 @@ public class ProductServiceImpl implements ProductService {
                 .categoryId(product.getCategory().getId())
                 .categoryName(product.getCategory().getCategoryName())
                 .imageUrl(imageUrl)
+                .averageRating(avgRating != null ? avgRating : 0.0)
+                .reviewCount(count)
                 .build();
     }
 }

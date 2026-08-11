@@ -2,7 +2,7 @@ package com.hamperly.luxurygifthampers.service.admin;
 
 import com.hamperly.luxurygifthampers.dto.admin.AdminAnalyticsResponse.OverallStats;
 import com.hamperly.luxurygifthampers.dto.admin.AdminAnalyticsResponse.RevenuePoint;
-import com.hamperly.luxurygifthampers.entity.Order;
+import com.hamperly.luxurygifthampers.dto.admin.AdminAnalyticsResponse.DateStats;
 import com.hamperly.luxurygifthampers.repository.admin.AdminOrderRepository;
 import com.hamperly.luxurygifthampers.repository.admin.AdminProductRepository;
 import com.hamperly.luxurygifthampers.repository.admin.AdminUserRepository;
@@ -12,10 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class AdminAnalyticsServiceImpl implements AdminAnalyticsService {
@@ -32,29 +31,14 @@ public class AdminAnalyticsServiceImpl implements AdminAnalyticsService {
     @Override
     @Transactional(readOnly = true)
     public OverallStats getOverallStats() {
-        List<Order> successOrders = adminOrderRepository.findAllSuccessOrders();
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        LocalDateTime todayEnd = LocalDate.now().atTime(23, 59, 59, 999999999);
+        LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        LocalDateTime monthEnd = LocalDate.now().with(java.time.temporal.TemporalAdjusters.lastDayOfMonth()).atTime(23, 59, 59, 999999999);
 
-        BigDecimal totalRevenue = BigDecimal.ZERO;
-        BigDecimal todayRevenue = BigDecimal.ZERO;
-        BigDecimal monthlyRevenue = BigDecimal.ZERO;
-
-        LocalDate today = LocalDate.now();
-        YearMonth thisMonth = YearMonth.now();
-
-        for (Order order : successOrders) {
-            BigDecimal amt = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
-            totalRevenue = totalRevenue.add(amt);
-
-            if (order.getCreatedAt() != null) {
-                LocalDate orderDate = order.getCreatedAt().toLocalDate();
-                if (orderDate.equals(today)) {
-                    todayRevenue = todayRevenue.add(amt);
-                }
-                if (YearMonth.from(orderDate).equals(thisMonth)) {
-                    monthlyRevenue = monthlyRevenue.add(amt);
-                }
-            }
-        }
+        BigDecimal totalRevenue = adminOrderRepository.sumTotalRevenue();
+        BigDecimal todayRevenue = adminOrderRepository.sumRevenueBetween(todayStart, todayEnd);
+        BigDecimal monthlyRevenue = adminOrderRepository.sumRevenueBetween(monthStart, monthEnd);
 
         Long totalProducts = adminProductRepository.count();
         Long totalUsers = adminUserRepository.count();
@@ -76,70 +60,133 @@ public class AdminAnalyticsServiceImpl implements AdminAnalyticsService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<RevenuePoint> getDailyRevenue() {
-        List<Order> successOrders = adminOrderRepository.findAllSuccessOrders();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    public List<RevenuePoint> getDailyRevenue(String dateStr) {
+        LocalDate date = (dateStr != null && !dateStr.isEmpty()) ? LocalDate.parse(dateStr) : LocalDate.now();
+        List<Object[]> results = adminOrderRepository.findHourlyRevenue(date.toString());
 
-        Map<String, List<Order>> grouped = successOrders.stream()
-                .filter(o -> o.getCreatedAt() != null)
-                .collect(Collectors.groupingBy(o -> o.getCreatedAt().format(formatter)));
+        Map<String, RevenuePoint> points = new TreeMap<>();
+        for (int i = 0; i < 24; i++) {
+            String hourStr = String.format("%02d:00", i);
+            points.put(hourStr, new RevenuePoint(hourStr, BigDecimal.ZERO, 0L));
+        }
 
-        List<RevenuePoint> list = new ArrayList<>();
-        grouped.forEach((period, orders) -> {
-            BigDecimal total = orders.stream()
-                    .map(Order::getTotalAmount)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            list.add(new RevenuePoint(period, total, (long) orders.size()));
-        });
+        for (Object[] row : results) {
+            Number hrNum = (Number) row[0];
+            BigDecimal rev = (BigDecimal) row[1];
+            Number cntNum = (Number) row[2];
+            String hourStr = String.format("%02d:00", hrNum.intValue());
+            points.put(hourStr, new RevenuePoint(hourStr, rev, cntNum.longValue()));
+        }
 
-        list.sort(Comparator.comparing(RevenuePoint::getPeriod));
-        return list;
+        return new ArrayList<>(points.values());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<RevenuePoint> getMonthlyRevenue() {
-        List<Order> successOrders = adminOrderRepository.findAllSuccessOrders();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM");
+    public List<RevenuePoint> getMonthlyRevenue(String dateStr) {
+        YearMonth ym = (dateStr != null && !dateStr.isEmpty()) ? YearMonth.parse(dateStr.substring(0, 7)) : YearMonth.now();
+        int daysInMonth = ym.lengthOfMonth();
 
-        Map<String, List<Order>> grouped = successOrders.stream()
-                .filter(o -> o.getCreatedAt() != null)
-                .collect(Collectors.groupingBy(o -> o.getCreatedAt().format(formatter)));
+        Map<String, RevenuePoint> points = new TreeMap<>();
+        for (int d = 1; d <= daysInMonth; d++) {
+            String dateKey = String.format("%s-%02d", ym.toString(), d);
+            points.put(dateKey, new RevenuePoint(dateKey, BigDecimal.ZERO, 0L));
+        }
 
-        List<RevenuePoint> list = new ArrayList<>();
-        grouped.forEach((period, orders) -> {
-            BigDecimal total = orders.stream()
-                    .map(Order::getTotalAmount)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            list.add(new RevenuePoint(period, total, (long) orders.size()));
-        });
+        List<Object[]> results = adminOrderRepository.findDailyRevenueForMonth(ym.getYear(), ym.getMonthValue());
+        for (Object[] row : results) {
+            java.sql.Date sqlDate = (java.sql.Date) row[0];
+            LocalDate lDate = sqlDate.toLocalDate();
+            String dateKey = lDate.toString();
+            BigDecimal rev = (BigDecimal) row[1];
+            Number cntNum = (Number) row[2];
+            points.put(dateKey, new RevenuePoint(dateKey, rev, cntNum.longValue()));
+        }
 
-        list.sort(Comparator.comparing(RevenuePoint::getPeriod));
-        return list;
+        return new ArrayList<>(points.values());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<RevenuePoint> getYearlyRevenue() {
-        List<Order> successOrders = adminOrderRepository.findAllSuccessOrders();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy");
+    public List<RevenuePoint> getYearlyRevenue(String dateStr) {
+        int year;
+        if (dateStr != null && !dateStr.isEmpty()) {
+            if (dateStr.contains("-")) {
+                year = LocalDate.parse(dateStr).getYear();
+            } else {
+                year = Integer.parseInt(dateStr);
+            }
+        } else {
+            year = LocalDate.now().getYear();
+        }
 
-        Map<String, List<Order>> grouped = successOrders.stream()
-                .filter(o -> o.getCreatedAt() != null)
-                .collect(Collectors.groupingBy(o -> o.getCreatedAt().format(formatter)));
+        Map<String, RevenuePoint> points = new TreeMap<>();
+        for (int m = 1; m <= 12; m++) {
+            String monthKey = String.format("%d-%02d", year, m);
+            points.put(monthKey, new RevenuePoint(monthKey, BigDecimal.ZERO, 0L));
+        }
 
-        List<RevenuePoint> list = new ArrayList<>();
-        grouped.forEach((period, orders) -> {
-            BigDecimal total = orders.stream()
-                    .map(Order::getTotalAmount)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            list.add(new RevenuePoint(period, total, (long) orders.size()));
-        });
+        List<Object[]> results = adminOrderRepository.findMonthlyRevenueForYear(year);
+        for (Object[] row : results) {
+            Number mthNum = (Number) row[0];
+            BigDecimal rev = (BigDecimal) row[1];
+            Number cntNum = (Number) row[2];
+            String monthKey = String.format("%d-%02d", year, mthNum.intValue());
+            points.put(monthKey, new RevenuePoint(monthKey, rev, cntNum.longValue()));
+        }
 
-        list.sort(Comparator.comparing(RevenuePoint::getPeriod));
-        return list;
+        return new ArrayList<>(points.values());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DateStats getDateStats(String dateStr) {
+        LocalDate date = (dateStr != null && !dateStr.isEmpty()) ? LocalDate.parse(dateStr) : LocalDate.now();
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.atTime(23, 59, 59, 999999999);
+        return fetchDateStats(start, end);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DateStats getTodayStats() {
+        LocalDateTime start = LocalDate.now().atStartOfDay();
+        LocalDateTime end = LocalDate.now().atTime(23, 59, 59, 999999999);
+        return fetchDateStats(start, end);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DateStats getMonthStats(String dateStr) {
+        YearMonth ym = (dateStr != null && !dateStr.isEmpty()) ? YearMonth.parse(dateStr.substring(0, 7)) : YearMonth.now();
+        LocalDateTime start = ym.atDay(1).atStartOfDay();
+        LocalDateTime end = ym.atEndOfMonth().atTime(23, 59, 59, 999999999);
+        return fetchDateStats(start, end);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DateStats getYearStats(String dateStr) {
+        int year;
+        if (dateStr != null && !dateStr.isEmpty()) {
+            if (dateStr.contains("-")) {
+                year = LocalDate.parse(dateStr).getYear();
+            } else {
+                year = Integer.parseInt(dateStr);
+            }
+        } else {
+            year = LocalDate.now().getYear();
+        }
+        LocalDateTime start = LocalDate.of(year, 1, 1).atStartOfDay();
+        LocalDateTime end = LocalDate.of(year, 12, 31).atTime(23, 59, 59, 999999999);
+        return fetchDateStats(start, end);
+    }
+
+    private DateStats fetchDateStats(LocalDateTime start, LocalDateTime end) {
+        BigDecimal revenue = adminOrderRepository.sumRevenueBetween(start, end);
+        Long count = adminOrderRepository.countOrdersBetween(start, end);
+        BigDecimal avg = adminOrderRepository.avgOrderValueBetween(start, end);
+        Long productsSold = adminOrderRepository.sumProductsSoldBetween(start, end);
+        return new DateStats(revenue, count, avg, productsSold);
     }
 }

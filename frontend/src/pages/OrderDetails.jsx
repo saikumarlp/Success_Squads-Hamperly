@@ -12,6 +12,18 @@ const OrderDetails = () => {
   const [toasts, setToasts] = useState([]);
   const pollIntervalRef = useRef(null);
 
+  // Review states
+  const [reviewStatus, setReviewStatus] = useState({});
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [activeItem, setActiveItem] = useState(null);
+  const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [title, setTitle] = useState('');
+  const [comment, setComment] = useState('');
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   const addToast = (message) => {
     const id = Date.now() + Math.random().toString(36).substr(2, 9);
     setToasts((prevToasts) => [...prevToasts, { id, message }]);
@@ -25,15 +37,102 @@ const OrderDetails = () => {
     try {
       if (showLoading) setLoading(true);
       const orderRes = await api.get(`/orders/${orderId}`);
-      setOrder(orderRes.data);
+      const orderData = orderRes.data;
+      setOrder(orderData);
       
       const trackingRes = await api.get(`/orders/${orderId}/tracking`);
       setTracking(trackingRes.data || []);
+
+      if (orderData && orderData.status === 'DELIVERED') {
+        const reviewRes = await api.get(`/reviews/check-order/${orderId}`);
+        setReviewStatus(reviewRes.data || {});
+      }
     } catch (err) {
       console.error("Error loading order details:", err);
       addToast(err.response?.data?.message || "Failed to load order information.");
     } finally {
       if (showLoading) setLoading(false);
+    }
+  };
+
+  const handleOpenReviewModal = (item) => {
+    setActiveItem(item);
+    setRating(5);
+    setHoverRating(0);
+    setTitle('');
+    setComment('');
+    setUploadedImages([]);
+    setReviewModalOpen(true);
+  };
+
+  const handleCloseReviewModal = () => {
+    setReviewModalOpen(false);
+    setActiveItem(null);
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    setUploading(true);
+    for (let file of files) {
+      const formData = new FormData();
+      formData.append("file", file);
+      try {
+        const res = await api.post("/reviews/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+        if (res.data && res.data.imageUrl) {
+          setUploadedImages((prev) => [...prev, res.data.imageUrl]);
+        }
+      } catch (err) {
+        console.error("Image upload failed:", err);
+        addToast("Failed to upload image. Please try again.");
+      }
+    }
+    setUploading(false);
+  };
+
+  const handleRemoveUploadedImage = (indexToRemove) => {
+    setUploadedImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!rating) {
+      addToast("Rating is required.");
+      return;
+    }
+    if (!comment.trim()) {
+      addToast("Review description is required.");
+      return;
+    }
+    
+    setSubmittingReview(true);
+    try {
+      await api.post("/reviews", {
+        productId: activeItem.productId,
+        orderId: orderId,
+        rating: rating,
+        title: title,
+        comment: comment,
+        imageUrls: uploadedImages
+      });
+      
+      addToast("Thank you for reviewing this product.");
+      
+      // Update local reviewed map
+      setReviewStatus((prev) => ({
+        ...prev,
+        [activeItem.productId]: true
+      }));
+      
+      handleCloseReviewModal();
+    } catch (err) {
+      console.error("Review submission failed:", err);
+      addToast(err.response?.data?.message || "Failed to submit review.");
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -175,9 +274,20 @@ const OrderDetails = () => {
 
       {/* Interactive Horizontal Timeline */}
       <div className="card shadow-sm border-0 mb-4 p-4">
-        <h5 className="fw-bold text-start mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>
-          Tracking Timeline
-        </h5>
+        <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <h5 className="fw-bold text-start m-0" style={{ fontFamily: "'Playfair Display', serif" }}>
+            Tracking Timeline
+          </h5>
+          {order && (
+            <span className="badge bg-warning-subtle text-dark border border-warning px-3 py-2 fs-7 fw-bold" style={{ borderRadius: '8px', backgroundColor: 'rgba(212, 175, 55, 0.1)' }}>
+              Expected Delivery: {order.expectedDeliveryDate 
+                ? new Date(order.expectedDeliveryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) 
+                : order.estimatedDelivery 
+                  ? new Date(order.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) 
+                  : 'N/A'}
+            </span>
+          )}
+        </div>
         
         {/* Timeline Desktop View */}
         <div className="d-none d-lg-block position-relative py-4">
@@ -308,6 +418,24 @@ const OrderDetails = () => {
                     <div className="text-muted small">
                       Price: <span className="fw-semibold text-dark">{formatCurrency(item.pricePerUnit)}</span> | Qty: <span className="fw-semibold text-dark">{item.quantity}</span>
                     </div>
+
+                    {order.status === 'DELIVERED' && (
+                      <div className="mt-2">
+                        {reviewStatus[item.productId] ? (
+                          <span className="text-success small fw-semibold d-flex align-items-center gap-1">
+                            ✔ You have already reviewed this product.
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleOpenReviewModal(item)}
+                            className="btn btn-sm btn-gold text-white d-flex align-items-center gap-1.5 px-3 py-1 rounded-0"
+                            style={{ backgroundColor: '#D4AF37', borderColor: '#D4AF37', fontSize: '0.8rem', fontWeight: '600' }}
+                          >
+                            ⭐ Write Review
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="text-sm-end">
                     <div className="text-muted small mb-0.5">Subtotal</div>
@@ -330,8 +458,14 @@ const OrderDetails = () => {
             </h5>
             <div className="d-flex flex-column gap-3 small border-bottom pb-3 mb-3">
               <div className="d-flex justify-content-between">
-                <span className="text-muted">Estimated Delivery:</span>
-                <span className="fw-semibold text-dark">{order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</span>
+                <span className="text-muted">Expected Delivery:</span>
+                <span className="fw-semibold text-dark">
+                  {order.expectedDeliveryDate 
+                    ? new Date(order.expectedDeliveryDate).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }) 
+                    : order.estimatedDelivery 
+                      ? new Date(order.estimatedDelivery).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }) 
+                      : 'N/A'}
+                </span>
               </div>
               <div className="d-flex justify-content-between">
                 <span className="text-muted">Tracking Number:</span>
@@ -402,6 +536,142 @@ const OrderDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Review Modal Backdrop & Dialog */}
+      {reviewModalOpen && activeItem && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
+          <div className="modal-dialog modal-dialog-centered" style={{ zIndex: 1060 }}>
+            <div className="modal-content border-0 shadow-lg rounded-0" style={{ backgroundColor: '#fff', color: '#333' }}>
+              <div className="modal-header border-bottom-0 pb-0">
+                <h5 className="modal-title fw-bold" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  ⭐ Write a Review
+                </h5>
+                <button type="button" className="btn-close" onClick={handleCloseReviewModal} aria-label="Close"></button>
+              </div>
+              <form onSubmit={handleSubmitReview}>
+                <div className="modal-body text-start pt-3">
+                  <div className="d-flex gap-3 align-items-center mb-4 bg-light p-2.5 border">
+                    <img 
+                      src={activeItem.imageUrl || "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&q=80&w=100"} 
+                      alt={activeItem.productName} 
+                      style={{ width: '55px', height: '55px', objectFit: 'cover' }}
+                    />
+                    <div>
+                      <h6 className="fw-bold mb-0.5 text-truncate" style={{ maxWidth: '300px' }}>{activeItem.productName}</h6>
+                      <small className="text-muted">Order ID: {orderId}</small>
+                    </div>
+                  </div>
+                  
+                  {/* Star Rating Select */}
+                  <div className="mb-3">
+                    <label className="form-label fw-bold small text-uppercase tracking-wider mb-1">Your Rating *</label>
+                    <div className="d-flex align-items-center gap-1.5 fs-4">
+                      {[1, 2, 3, 4, 5].map((starValue) => {
+                        const isFilled = hoverRating ? starValue <= hoverRating : starValue <= rating;
+                        return (
+                          <span 
+                            key={starValue}
+                            onMouseEnter={() => setHoverRating(starValue)}
+                            onMouseLeave={() => setHoverRating(0)}
+                            onClick={() => setRating(starValue)}
+                            style={{ cursor: 'pointer', color: isFilled ? '#D4AF37' : '#e0e0e0', transition: 'color 0.15s ease' }}
+                          >
+                            ★
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Review Title */}
+                  <div className="mb-3">
+                    <label className="form-label fw-bold small text-uppercase tracking-wider mb-1">Review Title</label>
+                    <input 
+                      type="text" 
+                      className="form-control rounded-0" 
+                      placeholder="Summarize your review (e.g. Excellent presentation!)"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      maxLength={100}
+                    />
+                  </div>
+
+                  {/* Review Description */}
+                  <div className="mb-3">
+                    <div className="d-flex justify-content-between">
+                      <label className="form-label fw-bold small text-uppercase tracking-wider mb-1">Review Description *</label>
+                      <span className="small text-muted">{comment.length}/500</span>
+                    </div>
+                    <textarea 
+                      className="form-control rounded-0" 
+                      rows="4" 
+                      placeholder="What did you like or dislike about this hamper?"
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value.substring(0, 500))}
+                      required
+                    ></textarea>
+                  </div>
+
+                  {/* Upload Images */}
+                  <div className="mb-3">
+                    <label className="form-label fw-bold small text-uppercase tracking-wider mb-1">Upload Images (Optional)</label>
+                    <input 
+                      type="file" 
+                      className="form-control rounded-0 animate-fade-in" 
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                    />
+                    {uploading && (
+                      <div className="small text-muted mt-1.5">
+                        <span className="spinner-border spinner-border-sm me-1.5" role="status"></span>
+                        Uploading images...
+                      </div>
+                    )}
+                    
+                    {/* Uploaded Images Preview */}
+                    {uploadedImages.length > 0 && (
+                      <div className="d-flex gap-2 flex-wrap mt-3">
+                        {uploadedImages.map((url, idx) => (
+                          <div key={idx} className="position-relative">
+                            <img 
+                              src={url} 
+                              alt="Review Upload Preview" 
+                              style={{ width: '60px', height: '60px', objectFit: 'cover', border: '1px solid #ccc' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveUploadedImage(idx)}
+                              className="btn btn-danger btn-sm p-0 position-absolute d-flex align-items-center justify-content-center"
+                              style={{ top: '-8px', right: '-8px', width: '18px', height: '18px', borderRadius: '50%', fontSize: '0.65rem' }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="modal-footer border-top-0 pt-0">
+                  <button type="button" className="btn btn-outline-secondary rounded-0 px-4" onClick={handleCloseReviewModal}>
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-gold text-white rounded-0 px-4" 
+                    style={{ backgroundColor: '#D4AF37', borderColor: '#D4AF37' }}
+                    disabled={submittingReview || uploading}
+                  >
+                    {submittingReview ? 'Submitting...' : 'Submit Review'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

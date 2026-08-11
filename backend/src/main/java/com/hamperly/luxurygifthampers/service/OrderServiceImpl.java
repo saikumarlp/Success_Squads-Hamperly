@@ -118,6 +118,8 @@ public class OrderServiceImpl implements OrderService {
                     .postalCode(shippingDetails.get("postalCode"))
                     .paymentStatus("PENDING")
                     .estimatedDelivery(LocalDateTime.now().plusDays(5))
+                    .orderDate(LocalDateTime.now())
+                    .expectedDeliveryDate(LocalDateTime.now().plusDays(4))
                     .trackingNumber("TRK-" + System.currentTimeMillis())
                     .build();
 
@@ -188,6 +190,9 @@ public class OrderServiceImpl implements OrderService {
             order.setPaymentId(razorpayPaymentId);
             order.setPaymentMethod("Razorpay (Online)");
             order.setConfirmedAt(LocalDateTime.now());
+            LocalDateTime now = LocalDateTime.now();
+            order.setOrderDate(now);
+            order.setExpectedDeliveryDate(now.plusDays(4));
             orderRepository.save(order);
 
             // Deduct stock for each purchased item
@@ -384,6 +389,8 @@ public class OrderServiceImpl implements OrderService {
                 .paymentMethod(order.getPaymentMethod())
                 .paymentStatus(order.getPaymentStatus())
                 .estimatedDelivery(order.getEstimatedDelivery())
+                .orderDate(order.getOrderDate())
+                .expectedDeliveryDate(order.getExpectedDeliveryDate())
                 .trackingNumber(order.getTrackingNumber())
                 .confirmedAt(order.getConfirmedAt())
                 .packedAt(order.getPackedAt())

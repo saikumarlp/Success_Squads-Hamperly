@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 // Reliable fallback luxury hamper image if Unsplash links ever fail
@@ -76,15 +77,39 @@ const ProductCard = ({ product, onAction, onViewDetails }) => {
     imageUrl
   } = product;
 
-  const { addToCart } = useAuth();
+  const { user, addToCart, addToWishlist, removeFromWishlist, isInWishlist } = useAuth();
+  const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
+  const inWishlist = isInWishlist(id);
+
+  const handleWishlistToggle = async (e) => {
+    e.stopPropagation();
+    if (!user) {
+      if (window.confirm("Please login to add items to your wishlist.")) {
+        navigate('/login');
+      }
+      return;
+    }
+    try {
+      if (inWishlist) {
+        await removeFromWishlist(id);
+        onAction("Removed from Wishlist");
+      } else {
+        await addToWishlist(id);
+        onAction("Added to Wishlist");
+      }
+    } catch (err) {
+      console.error(err);
+      onAction(err.message || "Failed to update wishlist.");
+    }
+  };
 
   // Local state to handle image fallback gracefully on errors
   const [imgSrc, setImgSrc] = useState(imageUrl || DEFAULT_IMAGE);
 
   // Set default values for visual presentation
-  const rating = 4.8;
-  const reviewCount = 35;
+  const rating = product.averageRating || 0;
+  const reviewCount = product.reviewCount || 0;
   const currentPrice = price || 0;
   const originalPrice = price ? price * 1.25 : 0;
   const discountPercentage = 20;
@@ -195,11 +220,12 @@ const ProductCard = ({ product, onAction, onViewDetails }) => {
         </div>
 
         {/* Review Stars & Star Counts */}
-        <div className="rating-container">
+        <div className="rating-container d-flex align-items-center gap-1">
           <span className="stars d-inline-flex" aria-label={`Rating: ${rating} out of 5`}>
             {renderStars(rating)}
           </span>
-          <span className="fw-semibold text-secondary">({reviewCount} reviews)</span>
+          <span className="fw-bold text-dark small ms-1">{rating > 0 ? Number(rating).toFixed(1) : '0.0'}</span>
+          <span className="fw-semibold text-secondary small">({reviewCount} reviews)</span>
         </div>
 
         {/* Stock Alert State */}
@@ -221,14 +247,21 @@ const ProductCard = ({ product, onAction, onViewDetails }) => {
           {/* Wishlist Button */}
           <button 
             type="button"
-            className="btn btn-action-icon"
-            onClick={(e) => handleAction(e, 'Add to Wishlist')}
-            title="Add to Wishlist"
-            aria-label="Add to Wishlist"
+            className={`btn btn-action-icon ${inWishlist ? 'active' : ''}`}
+            onClick={handleWishlistToggle}
+            title={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+            aria-label={inWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+            style={{ transition: 'transform 0.2s ease' }}
           >
-            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
+            {inWishlist ? (
+              <svg width="18" height="18" fill="#dc3545" stroke="#dc3545" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            ) : (
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            )}
           </button>
 
           {/* Add to Cart Button */}

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import ProductCard from './ProductCard';
+import ProductDetailsModal from './ProductDetailsModal';
 import { useAuth } from '../context/AuthContext';
 
 /**
@@ -53,7 +55,33 @@ const FeaturedProducts = ({ onAction }) => {
   // Modal Details State
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalAdding, setModalAdding] = useState(false);
-  const { addToCart } = useAuth();
+  const { user, addToCart, addToWishlist, removeFromWishlist, isInWishlist } = useAuth();
+  const navigate = useNavigate();
+
+  const modalInWishlist = selectedProduct ? isInWishlist(selectedProduct.id) : false;
+
+  const handleModalWishlistToggle = async (e) => {
+    e.stopPropagation();
+    if (!selectedProduct) return;
+    if (!user) {
+      if (window.confirm("Please login to add items to your wishlist.")) {
+        navigate('/login');
+      }
+      return;
+    }
+    try {
+      if (modalInWishlist) {
+        await removeFromWishlist(selectedProduct.id);
+        onAction("Removed from Wishlist");
+      } else {
+        await addToWishlist(selectedProduct.id);
+        onAction("Added to Wishlist");
+      }
+    } catch (err) {
+      console.error(err);
+      onAction(err.message || "Failed to update wishlist.");
+    }
+  };
 
   const handleModalAddToCart = async (product) => {
     if (product.stock <= 0) {
@@ -217,111 +245,16 @@ const FeaturedProducts = ({ onAction }) => {
           </div>
         </>
       )}
-      {/* Product Details Modal Overlay */}
+      {/* Reusable Product Details Modal */}
       {selectedProduct && (
-        <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
-          <div className="details-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="details-modal-header">
-              <h5 className="mb-0 fw-bold" style={{ fontFamily: "'Playfair Display', serif" }}>Luxury Hamper Details</h5>
-              <button 
-                type="button" 
-                className="btn-close" 
-                onClick={() => setSelectedProduct(null)}
-                aria-label="Close details"
-              ></button>
-            </div>
-            <div className="details-modal-body">
-              <div className="details-grid">
-                {/* Left Column: Image */}
-                <div className="details-img-wrapper">
-                  <img 
-                    src={selectedProduct.imageUrl || "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&q=80&w=600"} 
-                    alt={selectedProduct.name} 
-                    className="details-img"
-                    onError={(e) => {
-                      e.target.src = "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&q=80&w=600";
-                    }}
-                  />
-                </div>
-
-                {/* Right Column: Info details */}
-                <div className="details-info">
-                  <span className="details-category">{selectedProduct.categoryName || 'Signature Hamper'}</span>
-                  <h3 className="details-title">{selectedProduct.name}</h3>
-
-                  {/* Reviews Section */}
-                  <div className="d-flex align-items-center gap-2 mb-3">
-                    <span className="text-gold" style={{ display: 'inline-flex', color: '#D4AF37' }}>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <svg key={i} width="16" height="16" fill="currentColor" viewBox="0 0 24 24" className="me-0.5">
-                          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-                        </svg>
-                      ))}
-                    </span>
-                    <span className="fw-semibold text-muted small" style={{ fontSize: '0.8rem' }}>(4.8 rating | 35 premium reviews)</span>
-                  </div>
-
-                  <p className="details-desc">{selectedProduct.description || 'Indulge in our beautifully curated selection of premium ingredients, hand-wrapped with silk ribbons and custom greetings for the ultimate luxury gift hamper experience.'}</p>
-                  
-                  <div className="details-price-row">
-                    <span className="details-price">
-                      {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(selectedProduct.price || 0)}
-                    </span>
-                    <span className="details-price-original">
-                      {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format((selectedProduct.price || 0) * 1.25)}
-                    </span>
-                    <span className="details-badge-discount">20% OFF</span>
-                  </div>
-
-                  <div className={`details-stock-status fw-semibold ${selectedProduct.stock <= 0 ? 'text-danger' : (selectedProduct.stock < 15 ? 'text-warning' : 'text-success')}`}>
-                    <span className="me-1.5">●</span>
-                    {selectedProduct.stock <= 0 ? "Out of Stock" : (selectedProduct.stock < 15 ? `Limited Stock: Only ${selectedProduct.stock} left!` : "In Stock - Hand-wrapped to order")}
-                  </div>
-
-                  {/* Specifications Section */}
-                  <div className="mt-4 pt-3 border-top mb-4">
-                    <span className="d-block text-uppercase fw-bold text-muted mb-2" style={{ fontSize: '0.72rem', letterSpacing: '1px' }}>Specifications</span>
-                    <ul className="list-unstyled small text-muted mb-0 d-flex flex-column gap-1.5" style={{ fontSize: '0.82rem' }}>
-                      <li>• <strong>Gift Style:</strong> Hand-wrapped Signature Luxury Trunk</li>
-                      <li>• <strong>Stock Status:</strong> Ready for custom shipping</li>
-                      <li>• <strong>Presentation:</strong> Elegant gold-inlaid finish with silk ribbons</li>
-                    </ul>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="d-flex gap-3 mt-auto pt-3">
-                    <button
-                      type="button"
-                      className="btn btn-gold flex-grow-1 py-3 text-white text-uppercase fw-bold"
-                      style={{ backgroundColor: '#D4AF37', borderColor: '#D4AF37', borderRadius: '0', letterSpacing: '1.5px', fontSize: '0.8rem' }}
-                      onClick={() => handleModalAddToCart(selectedProduct)}
-                      disabled={modalAdding || selectedProduct.stock <= 0}
-                    >
-                      {modalAdding ? (
-                        <span className="spinner-border spinner-border-sm text-white" role="status"></span>
-                      ) : selectedProduct.stock <= 0 ? (
-                        "Out of Stock"
-                      ) : (
-                        "Add to Cart"
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-gold px-3.5"
-                      style={{ borderColor: '#D4AF37', color: '#D4AF37', borderRadius: '0' }}
-                      onClick={() => onAction(`"Wishlist" for "${selectedProduct.name}" will be available soon.`)}
-                      title="Add to Wishlist"
-                    >
-                      <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProductDetailsModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onAddToCart={handleModalAddToCart}
+          onWishlistToggle={handleModalWishlistToggle}
+          inWishlist={modalInWishlist}
+          addingToCart={modalAdding}
+        />
       )}
     </div>
   );

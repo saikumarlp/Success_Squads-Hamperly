@@ -12,6 +12,9 @@ DROP TABLE IF EXISTS invoices;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS orders;
 DROP TABLE IF EXISTS cart_items;
+DROP TABLE IF EXISTS wishlists;
+DROP TABLE IF EXISTS review_images;
+DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS productimages;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS categories;
@@ -93,6 +96,44 @@ CREATE TABLE cart_items (
     quantity INT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE
+);
+
+-- 6b. Create Wishlists Table
+CREATE TABLE wishlists (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE,
+    CONSTRAINT unique_user_product UNIQUE (user_id, product_id)
+);
+
+-- 6c. Create Reviews Table
+CREATE TABLE reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    order_id VARCHAR(255) NOT NULL,
+    rating INT NOT NULL,
+    title VARCHAR(255),
+    comment TEXT NOT NULL,
+    verified_purchase TINYINT(1) DEFAULT 1,
+    is_hidden TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
+    CONSTRAINT unique_user_product_review UNIQUE (user_id, product_id)
+);
+
+-- 6d. Create Review Images Table
+CREATE TABLE review_images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    review_id INT NOT NULL,
+    image_url TEXT NOT NULL,
+    FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE
 );
 
 -- 7. Create Orders Table

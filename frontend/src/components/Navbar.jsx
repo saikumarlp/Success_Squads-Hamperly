@@ -17,7 +17,7 @@ const getInitials = (fullName) => {
 };
 
 const Navbar = () => {
-  const { user, logout, cartCount, updateCartQty, removeFromCart, fetchCartCount } = useAuth();
+  const { user, logout, cartCount, updateCartQty, removeFromCart, fetchCartCount, wishlistCount } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -377,15 +377,17 @@ const Navbar = () => {
               <button 
                 type="button" 
                 className="btn btn-link text-dark p-2 position-relative border-0 navbar-icon-btn" 
-                onClick={() => handleDummyAction('Wishlist')}
+                onClick={() => navigate('/wishlist')}
                 title="My Wishlist"
               >
                 <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
-                <span className="position-absolute translate-middle badge rounded-pill badge-gold" style={{ top: '6px', right: '-1px', fontSize: '0.58rem', padding: '3px 5px' }}>
-                  0
-                </span>
+                {wishlistCount > 0 && (
+                  <span className="position-absolute translate-middle badge rounded-pill badge-gold" style={{ top: '6px', right: '-1px', fontSize: '0.58rem', padding: '3px 5px' }}>
+                    {wishlistCount}
+                  </span>
+                )}
               </button>
 
               {/* Cart Icon */}

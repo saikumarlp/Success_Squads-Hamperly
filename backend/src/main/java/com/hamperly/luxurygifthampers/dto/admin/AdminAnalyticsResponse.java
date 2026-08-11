@@ -78,4 +78,32 @@ public class AdminAnalyticsResponse {
         public Long getOrdersCount() { return ordersCount; }
         public void setOrdersCount(Long ordersCount) { this.ordersCount = ordersCount; }
     }
+
+    public static class DateStats {
+        private BigDecimal revenue;
+        private Long ordersCount;
+        private BigDecimal averageOrderValue;
+        private Long productsSold;
+
+        public DateStats() {}
+        
+        public DateStats(BigDecimal revenue, Long ordersCount, BigDecimal averageOrderValue, Long productsSold) {
+            this.revenue = revenue;
+            this.ordersCount = ordersCount;
+            this.averageOrderValue = averageOrderValue;
+            this.productsSold = productsSold;
+        }
+
+        public BigDecimal getRevenue() { return revenue; }
+        public void setRevenue(BigDecimal revenue) { this.revenue = revenue; }
+
+        public Long getOrdersCount() { return ordersCount; }
+        public void setOrdersCount(Long ordersCount) { this.ordersCount = ordersCount; }
+
+        public BigDecimal getAverageOrderValue() { return averageOrderValue; }
+        public void setAverageOrderValue(BigDecimal averageOrderValue) { this.averageOrderValue = averageOrderValue; }
+
+        public Long getProductsSold() { return productsSold; }
+        public void setProductsSold(Long productsSold) { this.productsSold = productsSold; }
+    }
 }

@@ -259,6 +259,56 @@ const Orders = () => {
                   </div>
                 </div>
 
+                {/* Dates & Statuses row */}
+                <div className="row g-3 mb-4">
+                  <div className="col-md-6">
+                    <span className="text-secondary small text-uppercase font-semibold tracking-wider block">Order Metadata</span>
+                    <div className="mt-2 p-2.5 rounded h-100" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div className="small">
+                        <div className="mb-1">
+                          <span className="text-secondary">Order Date:</span>{' '}
+                          <span className="text-white">
+                            {selectedOrder.orderDate 
+                              ? new Date(selectedOrder.orderDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) 
+                              : selectedOrder.createdAt 
+                                ? new Date(selectedOrder.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+                                : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="mb-1">
+                          <span className="text-secondary">Order Time:</span>{' '}
+                          <span className="text-white">
+                            {selectedOrder.orderDate 
+                              ? new Date(selectedOrder.orderDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) 
+                              : selectedOrder.createdAt 
+                                ? new Date(selectedOrder.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+                                : 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <span className="text-secondary small text-uppercase font-semibold tracking-wider block">Delivery Schedule</span>
+                    <div className="mt-2 p-2.5 rounded h-100" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div className="small">
+                        <div className="mb-1">
+                          <span className="text-secondary">Expected Delivery:</span>{' '}
+                          <strong className="text-warning">
+                            {selectedOrder.expectedDeliveryDate 
+                              ? new Date(selectedOrder.expectedDeliveryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) 
+                              : 'N/A'}
+                          </strong>
+                        </div>
+                        <div className="mb-1">
+                          <span className="text-secondary">Status:</span>{' '}
+                          <span className="text-white">{selectedOrder.status}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <span className="text-secondary small text-uppercase font-semibold tracking-wider block mb-2">Purchased Products</span>
                 <div className="table-responsive">
                   <table className="table table-dark align-middle m-0" style={{ backgroundColor: 'transparent' }}>

@@ -20,6 +20,7 @@ import AboutUs from './pages/AboutUs';
 import Contact from './pages/Contact';
 import Orders from './pages/Orders';
 import OrderDetails from './pages/OrderDetails';
+import Wishlist from './pages/Wishlist';
 
 // Admin panel layout & pages
 import AdminLayout from './layouts/AdminLayout/AdminLayout';
@@ -29,6 +30,7 @@ import AdminProducts from './pages/admin/ProductManagement';
 import AdminUsers from './pages/admin/UserManagement';
 import AdminAnalytics from './pages/admin/Analytics';
 import AdminOrders from './pages/admin/Orders';
+import AdminReviews from './pages/admin/Reviews';
 import AdminSettings from './pages/admin/Settings';
 
 // Layout wrapper for customer storefront
@@ -66,6 +68,7 @@ function App() {
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/analytics" element={<AdminAnalytics />} />
               <Route path="/admin/orders" element={<AdminOrders />} />
+              <Route path="/admin/reviews" element={<AdminReviews />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
             </Route>
 
@@ -112,6 +115,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Shop />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/wishlist" 
+                element={
+                  <ProtectedRoute>
+                    <Wishlist />
                   </ProtectedRoute>
                 } 
               />
