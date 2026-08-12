@@ -98,13 +98,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    setCartCount(0);
-    setWishlistCount(0);
-    setWishlistItems([]);
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error("Logout API call failed:", error);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      setCartCount(0);
+      setWishlistCount(0);
+      setWishlistItems([]);
+    }
   };
 
   const addToCart = async (productId, quantity = 1) => {

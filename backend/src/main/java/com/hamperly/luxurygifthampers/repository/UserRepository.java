@@ -12,9 +12,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     Boolean existsByEmail(String email);
 
-    @Query("SELECT COUNT(u) > 0 FROM User u WHERE :mobileNumber IS NULL AND 1 = 0")
     Boolean existsByMobileNumber(String mobileNumber);
 
-    @Query("SELECT COUNT(u) > 0 FROM User u WHERE :mobileNumber IS NULL AND :id IS NULL AND 1 = 0")
     Boolean existsByMobileNumberAndIdNot(String mobileNumber, Long id);
 }

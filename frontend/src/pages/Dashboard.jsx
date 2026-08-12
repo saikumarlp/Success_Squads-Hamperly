@@ -79,19 +79,6 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          {/* Compact welcome text section */}
-          <div className="mb-4 text-start">
-            <span className="text-muted text-uppercase fw-semibold d-block" style={{ fontSize: '0.72rem', letterSpacing: '2px', color: '#D4AF37' }}>
-              LUXURY GIFT SELECTIONS
-            </span>
-            <h3 className="mb-0 text-dark fw-bold" style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', marginTop: '4px' }}>
-              Welcome back, {profileDetails?.fullName}!
-            </h3>
-          </div>
-
-          {/* Spacer */}
-          <div className="mb-4" style={{ height: '1px', backgroundColor: 'rgba(0,0,0,0.06)' }}></div>
-
           {/* Curated Featured E-Commerce Catalog Section */}
           <FeaturedProducts onAction={addToast} />
         </>

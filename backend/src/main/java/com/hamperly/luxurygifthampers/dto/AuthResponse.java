@@ -15,7 +15,7 @@ public class AuthResponse {
         this.email = email;
     }
 
-    public AuthResponse(String token, String type, String fullName, String email) {
+    public AuthResponse(String token, String type, String fullName, String email) { 
         this.token = token;
         this.type = type;
         this.fullName = fullName;
@@ -36,7 +36,7 @@ public class AuthResponse {
     public void setEmail(String email) { this.email = email; }
 
     // Manual Builder
-    public static class AuthResponseBuilder {
+    public static class AuthResponseBuilder { 
         private String token;
         private String type = "Bearer";
         private String fullName;

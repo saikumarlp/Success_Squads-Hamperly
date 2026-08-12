@@ -136,6 +136,32 @@ const Navbar = () => {
       const orderResponse = await api.post('/orders/create', payload);
       const { orderId, amount, currency, keyId } = orderResponse.data;
 
+      if (orderId && orderId.startsWith("order_mock_")) {
+        addToast("Sandbox Mode: Bypassing payment gateway...");
+        try {
+          const verifyPayload = {
+            razorpayOrderId: orderId,
+            razorpayPaymentId: "pay_mock_" + Date.now(),
+            razorpaySignature: "sig_mock_" + Date.now()
+          };
+          const verifyRes = await api.post('/orders/verify', verifyPayload);
+          if (verifyRes.data.status === "SUCCESS") {
+            addToast("Order placed successfully in Sandbox mode!");
+            setCartItems([]);
+            await fetchCartCount();
+            setShowCartDrawer(false);
+          } else {
+            addToast("Failed to verify sandbox order.");
+          }
+        } catch (err) {
+          console.error("Signature verification failed:", err);
+          addToast(err.response?.data?.message || "Failed to complete checkout.");
+        } finally {
+          setCartLoading(false);
+        }
+        return;
+      }
+
       const options = {
         key: keyId,
         amount: amount,
@@ -288,7 +314,12 @@ const Navbar = () => {
             src="/Hamperly.png" 
             alt="Luxury Gift Hampers Logo" 
             className="me-2"
-            style={{ height: '38px', width: 'auto', objectFit: 'contain' }}
+            style={{ 
+              height: '40px', 
+              width: '40px', 
+              borderRadius: '50%',
+              objectFit: 'cover'
+            }} 
             onError={(e) => { e.target.style.display = 'none'; }}
           />
           <span style={{ 

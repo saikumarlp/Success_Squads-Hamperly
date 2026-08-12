@@ -4,7 +4,9 @@ import com.hamperly.luxurygifthampers.dto.LoginRequest;
 import com.hamperly.luxurygifthampers.dto.RegisterRequest;
 import com.hamperly.luxurygifthampers.entity.User;
 import com.hamperly.luxurygifthampers.entity.PasswordResetToken;
+import com.hamperly.luxurygifthampers.entity.JwtToken;
 import com.hamperly.luxurygifthampers.repository.PasswordResetTokenRepository;
+import com.hamperly.luxurygifthampers.repository.JwtTokenRepository;
 import com.hamperly.luxurygifthampers.security.JwtTokenProvider;
 import com.hamperly.luxurygifthampers.service.UserService;
 import jakarta.validation.Valid;
@@ -16,6 +18,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -38,6 +42,9 @@ public class AuthController {
     @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
+    @Autowired
+    private JwtTokenRepository jwtTokenRepository;
+
     @Value("${hamperly.app.jwtExpirationMs}")
     private int jwtExpirationMs;
 
@@ -55,12 +62,12 @@ public class AuthController {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = tokenProvider.generateToken(authentication);
 
-        PasswordResetToken jwtToken = PasswordResetToken.builder()
-                .tokenHash(jwt)
+        // Save token to database
+        jwtTokenRepository.save(JwtToken.builder()
                 .user(user)
-                .expiresAt(LocalDateTime.now().plusNanos(jwtExpirationMs * 1_000_000L))
-                .build();
-        passwordResetTokenRepository.save(jwtToken);
+                .token(jwt)
+                .expiresAt(LocalDateTime.now().plusSeconds(jwtExpirationMs / 1000))
+                .build());
 
         return new ResponseEntity<>(AuthResponse.builder()
                 .token(jwt)
@@ -83,6 +90,13 @@ public class AuthController {
             String jwt = tokenProvider.generateToken(authentication);
             User user = userService.getUserByEmail(loginRequest.getEmail());
 
+            // Save token to database
+            jwtTokenRepository.save(JwtToken.builder()
+                    .user(user)
+                    .token(jwt)
+                    .expiresAt(LocalDateTime.now().plusSeconds(jwtExpirationMs / 1000))
+                    .build());
+
             return ResponseEntity.ok(AuthResponse.builder()
                     .token(jwt)
                     .fullName(user.getFullName())
@@ -94,5 +108,19 @@ public class AuthController {
             errors.put("message", "Invalid email or password");
             return new ResponseEntity<>(errors, HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            String jwt = bearerToken.substring(7);
+            jwtTokenRepository.findByToken(jwt).ifPresent(token -> {
+                jwtTokenRepository.delete(token);
+            });
+        }
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Logged out successfully");
+        return ResponseEntity.ok(response);
     }
 }

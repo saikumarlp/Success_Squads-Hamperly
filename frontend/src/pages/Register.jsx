@@ -162,9 +162,7 @@ const Register = () => {
     setErrors({});
     try {
       await register(formData);
-      navigate('/login', { 
-        state: { successMessage: 'Registration successful! Please sign in.' } 
-      });
+      navigate('/login', { state: { successMessage: 'Registration successful! Please sign in with your credentials.' } });
     } catch (err) {
       console.error(err);
       if (err.errors) {
